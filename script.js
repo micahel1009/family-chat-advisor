@@ -1,5 +1,5 @@
 // 🚨 替換成您在 Google AI Studio 取得的 API 金鑰 🚨
-const API_KEY = "YOUR_API_KEY_HERE"; 
+const API_KEY = "AIzaSyCUIibepz0j_6J2wzmnYjftC-IIL1FI28E"; 
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
@@ -78,4 +78,5 @@ userInput.addEventListener('keydown', (e) => {
         e.preventDefault(); // 阻止換行
         sendButton.click();
     }
+
 });
