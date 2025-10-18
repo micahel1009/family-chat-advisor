@@ -3,23 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家庭溝通顧問 - 免費 AI 服務</title>
+    <title>家庭溫情溝通站 - AI 顧問</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>家庭溫情溝通站</h1>
-        <p>請輸入您遇到的家庭溝通情境，我會提供主觀的安慰與建議。</p>
+        <h1>家庭溫情溝通站 🏡</h1>
+        <p>請輸入您遇到的家庭溝通情境，讓 AI 顧問為您提供溫暖的安慰與建議。</p>
         
         <div class="chat-area" id="chatArea">
             <div class="message system-message">
-                你好！我是你的家庭溝通顧問AI。請告訴我你現在的心情或遇到的情境。
+                你好！我是你的聊聊小幫手，有什麼事情都可以告訴我。這裡對話只有你跟我知道而已，別擔心，我永遠在這裡。
             </div>
         </div>
 
+        <div id="loadingIndicator" class="loading-indicator">
+            AI 顧問正在思考中...
+        </div>
+
         <div class="input-area">
-            <textarea id="userInput" placeholder="輸入您的情境..."></textarea>
-            <button id="sendButton">發送與取得建議</button>
+            <input type="text" id="userInput" placeholder="輸入您的情境...">
+            <button id="sendButton" title="發送訊息">
+                發送 &#10148;
+            </button>
         </div>
         
         <p class="footer-note">這是一個初步的溝通輔助工具，無法替代專業建議或真實的家庭對話。</p>
