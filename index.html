@@ -1,36 +1,705 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家庭溫情溝通站 - AI 顧問</title>
-    <link rel="stylesheet" href="style.css">
+    <title>心橋 - 溫暖家庭溝通平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'noto': ['Noto Sans TC', 'sans-serif']
+                    },
+                    colors: {
+                        'warm-orange': '#FF8A65',
+                        'warm-peach': '#FFAB91',
+                        'soft-coral': '#FFCCBC',
+                        'gentle-pink': '#F8BBD9',
+                        'calm-blue': '#81C784',
+                        'serene-green': '#A5D6A7'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://felo.ai/js/iframe.js?v=1760807775618"></script> 
+    <style>
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #bfc5ce transparent !important;
+        }
+        *::-webkit-scrollbar {
+            width: 6px !important;
+        }
+        *::-webkit-scrollbar-thumb {
+            background-color: #bfc5ce !important;
+            border-radius: 9999px !important;
+        }
+        *::-webkit-scrollbar-track {
+            background-color: transparent !important;
+            border-radius: 9999px !important;
+        }
+    </style>
+    <style data-id="immersive-translate-input-injected-css">
+        .immersive-translate-input {  position: absolute;  top: 0;  right: 0;  left: 0;  bottom: 0;  z-index: 2147483647;  display: flex;  justify-content: center;  align-items: center;}
+        /* ... 省略大量與 AI 聊天功能無關的樣式代碼 ... */
+        /* 為保持完整性，以下僅列出重要的起始和結尾標籤，實際複製時請包含所有內容 */
+        .immersive-translate-modal input[type="radio"] {  margin: 0 6px;  cursor: pointer;}
+        /* ... (請確保這裡包含了所有您原始的 style 內容，因為它非常長) ... */
+        .imt-linear-black-btn {  border-radius: 50px;  background: linear-gradient(66deg, #222 19%, #696969 94.25%);  height: 48px;  width: 100%;  color: #fff;  font-size: 16px;  font-weight: 700;  display: flex;  align-items: center;  cursor: pointer;  justify-content: center;}
+    </style>
+    <style id="felo-iframe-styles">html,body{margin:0 !important;padding:0 !important;}</style>
 </head>
-<body>
-    <div class="container">
-        <h1>家庭溫情溝通站 🏡</h1>
-        <p>請輸入您遇到的家庭溝通情境，讓 AI 顧問為您提供溫暖的安慰與建議。</p>
+<body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" contenteditable="false" spellcheck="false" style="cursor: default;">
+    
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-orange-100 dark:border-gray-700">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="flex items-center justify-between h-16" data-element-id="18430845-22ef-49d9-8932-7fbd81d41277">                
+                <div class="flex items-center space-x-2">                    
+                    <i class="fas fa-heart text-2xl text-warm-orange"></i>                    
+                    <span class="text-xl font-semibold bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent" data-element-id="7fb5e9f3-4d84-4a88-8716-a1c3a62c1c8d">聊聊小幫手</span>                
+                </div>                                
+                <div class="hidden md:flex items-center space-x-8">                    
+                    <a href="#home" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">首頁</a>                    
+                    <a href="#features" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">功能特色</a>                    
+                    <a href="#communication" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">溝通技巧</a>                    
+                    <a href="#chat" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">智能對話</a>                    
+                    <a href="#testimonials" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors" data-element-id="00e01df4-9d14-4092-bd1f-235e5e2aa73c">用戶分享</a>                
+                </div>
+                <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
+                    <i class="fas fa-sun dark:hidden"></i>                    
+                    <i class="fas fa-moon hidden dark:inline"></i>                
+                </button>            
+            </div>        
+        </div>    
+    </nav>
+
+    <section id="home" class="relative min-h-screen flex items-center overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="absolute inset-0 bg-gradient-to-br from-warm-orange/10 via-gentle-pink/10 to-soft-coral/10" data-element-id="7fdd0bc6-6d73-49ff-9ed0-9cec804f3355"></div>                
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-20 grid lg:grid-cols-2 gap-12 items-center">            
+            <div class="space-y-8 lg:space-y-12" data-element-id="80668439-2bda-480c-acd3-60a6907200c4">                
+                <div class="space-y-6">                    
+                    <h1 class="text-5xl lg:text-7xl font-bold leading-tight" data-element-id="2582d332-2d7f-4d18-b16e-40327559b0d5">                        
+                        <span class="bg-gradient-to-r from-warm-orange via-gentle-pink to-warm-peach bg-clip-text text-transparent" data-element-id="0947a7f2-e9ae-4dbe-a433-f9689adac684">溫暖家庭</span><br>                        
+                        <span class="text-gray-800 dark:text-gray-200">溝通橋樑</span>                    
+                    </h1>                    
+                    <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-400 leading-relaxed">                        
+                        專為家庭溝通設計的溫暖平台，透過專業心理輔導技術，讓每一次對話都充滿理解與關愛，就像真人在輔導與關心您一樣。                    
+                    </p>                
+                </div>                                
+                <div class="flex flex-col sm:flex-row gap-4">                    
+                    <button class="px-8 py-4 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-semibold rounded-2xl hover:shadow-lg hover:scale-105 transition-all duration-300">                        
+                        <i class="fas fa-comments mr-2"></i>                        
+                        開始溫暖對話                    
+                    </button>                    
+                    <button class="px-8 py-4 border-2 border-warm-orange text-warm-orange dark:text-orange-300 font-semibold rounded-2xl hover:bg-warm-orange hover:text-white transition-all duration-300">                        
+                        <i class="fas fa-play mr-2"></i>                        
+                        了解更多                    
+                    </button>                
+                </div>
+                <div class="flex items-center space-x-8 text-sm text-gray-500 dark:text-gray-400" data-element-id="54d44b3c-19b3-4eae-bf91-5d35d58f4f45" style="position: relative; width: 225px; height: 20px; top: 5px; left: -32px;">                    
+                    <div class="flex items-center space-x-2">                        
+                        <span data-element-id="f3a521e4-0bc8-4d96-9409-1fba736ca53b" style="position: relative; top: 0px; left: 0px; width: 91.0208px; height: 20px;">&nbsp;</span>                    
+                    </div>                    
+                    <div class="flex items-center space-x-2" data-element-id="353f756e-0f26-4957-8276-44acfbb3fade">                        
+                        <i class="fas fa-clock text-warm-orange" data-element-id="3d832fcc-7fba-43ec-aaef-0a36853f5142" style="position: relative; top: 3px; left: -94px;"></i>                        
+                        <span data-element-id="c675671d-1b00-469b-bb2b-f75c095c35fe" style="position: relative; top: 3px; left: -92px;">24小時陪伴</span>                    
+                    </div>                
+                </div>            
+            </div>
+            
+            <div class="relative">                
+                <div class="relative z-10">                    
+                    <img src="https://api.felo.ai/images/s/3AQQyo0i9s" alt="溫暖的家庭溝通場景" class="rounded-3xl shadow-2xl" data-element-id="8e27fad9-71a3-45c4-8edc-1fdadf75c246">                
+                </div>                                
+                <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
+                <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
+            </div>        
+        </div>
         
-        <div class="chat-area" id="chatArea">
-            <div class="message system-message">
-                你好！我是你的聊聊小幫手，有什麼事情都可以告訴我。這裡對話只有你跟我知道而已，別擔心，我永遠在這裡。
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">            
+            <i class="fas fa-chevron-down text-warm-orange text-2xl"></i>        
+        </div>    
+    </section>
+
+    <section id="features" class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;" data-element-id="e4cb01da-7cb0-469e-a374-c4ee62c55297">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">功能特色</span>                
+                </h2>                
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                    結合專業心理學理論與AI技術，為您的家庭提供全方位的溝通支持                
+                </p>            
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">                
+                <div class="group p-8 bg-gradient-to-br from-white to-orange-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-warm-peach rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-heart text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">情感支持與傾聽</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">透過溫暖的傾聽和對話，陪您梳理心情、緩解壓力，讓您感受到真實的關懷與理解。</p>                
+                </div>
+                
+                <div class="group p-8 bg-gradient-to-br from-white to-pink-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-users text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">專業溝通指導</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">基於心理師認可的4步驟溝通法，引導您學會穩定情緒、專注聆聽、理解對方並清晰表達。</p>                
+                </div>
+                
+                <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-clock text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">24小時即時陪伴</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">無需預約，無論何時，只要您的情緒需要支持，都可以立即獲得回應與陪伴。</p>                
+                </div>
+                
+                <div class="group p-8 bg-gradient-to-br from-white to-green-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-shield-alt text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">隱私保護</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">對話全程加密，經過去識別化處理，確保您的隱私安全，讓您安心分享內心感受。</p>                
+                </div>
+                
+                <div class="group p-8 bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-warm-peach rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-lightbulb text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">個性化建議</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">根據您的具體情況，提供量身定制的溝通建議和情緒調節技巧。</p>                
+                </div>
+                
+                <div class="group p-8 bg-gradient-to-br from-white to-purple-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                        <i class="fas fa-brain text-2xl text-white"></i>                    
+                    </div>                    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">自我探索引導</h3>                    
+                    <p class="text-gray-600 dark:text-gray-400">透過引導性對話，幫助您發現問題背後的深層原因，促進自我覺察與成長。</p>                
+                </div>            
+            </div>        
+        </div>    
+    </section>
+
+    <section id="communication" class="py-20" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">專業溝通技巧</span>                
+                </h2>                
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                    基於心理師認可的溝通方法，讓家庭關係更加和諧溫馨                
+                </p>            
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-16 items-center mb-20">                
+                <div class="space-y-8">                    
+                    <h3 class="text-3xl font-bold text-gray-800 dark:text-gray-200">4步驟溝通法</h3>                                        
+                    <div class="space-y-6">                        
+                        <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-warm-orange/10 to-warm-peach/10 rounded-2xl">                            
+                            <div class="w-12 h-12 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center flex-shrink-0">                                
+                                <span class="text-white font-bold">1</span>                            
+                            </div>                            
+                            <div>                                
+                                <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">穩定情緒</h4>                                
+                                <p class="text-gray-600 dark:text-gray-400">學習察覺自己的情緒狀態，冷靜思考後再進行溝通，避免衝動造成傷害。</p>                            
+                            </div>                        
+                        </div>
+                        
+                        <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-gentle-pink/10 to-soft-coral/10 rounded-2xl">                            
+                            <div class="w-12 h-12 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-full flex items-center justify-center flex-shrink-0">                                
+                                <span class="text-white font-bold">2</span>                            
+                            </div>                            
+                            <div>                                
+                                <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">專注聆聽</h4>                                
+                                <p class="text-gray-600 dark:text-gray-400">用心聆聽家人表達的情感和內容，理解他們真正想要傳達的意思。</p>                            
+                            </div>                        
+                        </div>
+                        
+                        <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-calm-blue/10 to-serene-green/10 rounded-2xl">                            
+                            <div class="w-12 h-12 bg-gradient-to-br from-calm-blue to-serene-green rounded-full flex items-center justify-center flex-shrink-0">                                
+                                <span class="text-white font-bold">3</span>                            
+                            </div>                            
+                            <div>                                
+                                <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">理解對方</h4>                                
+                                <p class="text-gray-600 dark:text-gray-400">站在對方的角度思考，同理他們的感受和處境，建立情感連結。</p>                            
+                            </div>                        
+                        </div>
+                        
+                        <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-warm-peach/10 to-warm-orange/10 rounded-2xl">                            
+                            <div class="w-12 h-12 bg-gradient-to-br from-warm-peach to-warm-orange rounded-full flex items-center justify-center flex-shrink-0">                                
+                                <span class="text-white font-bold">4</span>                            
+                            </div>                            
+                            <div>                                
+                                <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">清晰表達</h4>                                
+                                <p class="text-gray-600 dark:text-gray-400">使用明確的語言表達自己的需求和感受，讓對方能夠真正理解。</p>                            
+                            </div>                        
+                        </div>                    
+                    </div>                
+                </div>
+                
+                <div class="relative">                    
+                    <img src="https://api.felo.ai/images/s/FTh6vWA0iX" alt="家庭溝通場景" class="rounded-3xl shadow-2xl">                                        
+                    <div class="absolute -bottom-6 -right-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">                        
+                        <div class="text-center">                            
+                            <div class="text-3xl font-bold text-warm-orange">85%</div>                            
+                            <div class="text-sm text-gray-600 dark:text-gray-400">用戶滿意度</div>                        
+                        </div>                    
+                    </div>                
+                </div>            
+            </div>
+            
+            <div class="bg-gradient-to-br from-white to-orange-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-8 lg:p-12">                
+                <h3 class="text-2xl font-bold mb-8 text-center text-gray-800 dark:text-gray-200">家庭關係升溫的五種方法</h3>                                
+                <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">                    
+                    <div class="text-center space-y-4">                        
+                        <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center mx-auto">                            
+                            <i class="fas fa-home text-2xl text-white"></i>                        
+                        </div>                        
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">整理居家環境</h4>                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400">創造舒適整潔的家庭氛圍</p>                    
+                    </div>
+                    
+                    <div class="text-center space-y-4">                        
+                        <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-full flex items-center justify-center mx-auto">                            
+                            <i class="fas fa-map-marked-alt text-2xl text-white"></i>                        
+                        </div>                        
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">安排家人出遊</h4>                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400">增加親密互動的機會</p>                    
+                    </div>
+                    
+                    <div class="text-center space-y-4">                        
+                        <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-full flex items-center justify-center mx-auto">                            
+                            <i class="fas fa-utensils text-2xl text-white"></i>                        
+                        </div>                        
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">共同用餐</h4>                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400">分享日常、建立情感連結</p>                    
+                    </div>
+                    
+                    <div class="text-center space-y-4">                        
+                        <div class="w-16 h-16 bg-gradient-to-br from-warm-peach to-warm-orange rounded-full flex items-center justify-center mx-auto">                            
+                            <i class="fas fa-brain text-2xl text-white"></i>                        
+                        </div>                        
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">覺察調節情緒</h4>                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400">學習管理自己的情緒狀態</p>                    
+                    </div>
+                    
+                    <div class="text-center space-y-4">                        
+                        <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-warm-orange rounded-full flex items-center justify-center mx-auto">                            
+                            <i class="fas fa-comments text-2xl text-white"></i>                        
+                        </div>                        
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">正向溝通技巧</h4>                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400">練習有效的表達方式</p>                    
+                    </div>                
+                </div>            
+            </div>        
+        </div>    
+    </section>
+
+    <section id="chat" class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗</span>                
+                </h2>                
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                    就像與溫暖的朋友對話一樣，專業、簡潔、充滿理解                
+                </p>            
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden" id="chat-widget-container">
+                    <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-heart text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">心橋智能助手</h3>
+                                <p class="text-white/80 text-sm">正在線上・隨時為您服務</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="chatArea" class="p-6 space-y-4 h-96 overflow-y-auto">
+                        
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-heart text-white text-xs"></i>
+                            </div>
+                            <div class="bg-gradient-to-r from-orange-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-2xl rounded-tl-none max-w-md message system-message">
+                                你好！我是你的聊聊小幫手，有什麼事情都可以告訴我。這裡對話只有你跟我知道而已，別擔心，我永遠在這裡。
+                            </div>
+                        </div>
+                        
+                        <div id="loadingIndicator" class="loading-indicator text-center text-sm text-gray-500 dark:text-gray-400 p-2 hidden">
+                            AI 顧問正在思考中...
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-1 p-4 border border-gray-200 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none">
+                            <button id="sendButton" class="w-12 h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div id="loadingIndicator" class="loading-indicator">
-            AI 顧問正在思考中...
-        </div>
+    <section id="testimonials" class="py-20" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">用戶分享</span>                
+                </h2>                
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                    真實用戶的溫暖體驗，見證家庭關係的美好轉變                
+                </p>            
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://api.felo.ai/images/s/4fa0VaErwi" alt="林媽媽" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">林媽媽</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">三個孩子的母親</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"很高興可以有這個產品，我還是學生，心理諮商對我來說太昂貴了，有這個可以幫我抒發情緒真的幫了大忙。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://api.felo.ai/images/s/50CoZz4TRH" alt="陳爸爸" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">陳爸爸</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">工程師</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"很謝謝這次對話讓我焦慮的情緒緩和許多，引導思考和適時的同理讓人感到窩心和有收穫。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://api.felo.ai/images/s/1lOo7fgWEv" alt="小雯" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">小雯</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">大學生</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"真的是很好的產品🥹 有種被救到的感覺🥲 感謝你們，有地方可以聊聊很開心。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://api.felo.ai/images/s/1wF2JHiCl6" alt="王太太" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">王太太</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">家庭主婦</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"我覺得很棒，他每一個問答都有延伸出他想問我的問題，讓我自己進一步去反思。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://api.felo.ai/images/s/5MvrIRoSKW" alt="李先生" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">李先生</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">上班族</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"蠻有意思的，他有讓我感覺到跟我的心理師的談話技巧有高度相似的脈絡。他跟ChatGPT有決定性的差異，非常有趣。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300">                    
+                    <div class="flex items-center space-x-4 mb-6">                        
+                        <img src="https://image.pollinations.ai/prompt/asian%20teenage%20girl%20smiling%20gently,%20professional%20portrait,%20warm%20lighting?nologo=true" alt="小美" class="w-12 h-12 rounded-full object-cover">                        
+                        <div>                            
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">小美</h4>                            
+                            <p class="text-sm text-gray-500 dark:text-gray-400">高中生</p>                        
+                        </div>                    
+                    </div>                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">"我覺得是很好的產品，很體貼也能提出新的看法，雖然是項收費也值得的產品。"</p>                    
+                    <div class="flex text-warm-orange">                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                        
+                        <i class="fas fa-star"></i>                    
+                    </div>                
+                </div>            
+            </div>        
+        </div>    
+    </section>
 
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="輸入您的情境...">
-            <button id="sendButton" title="發送訊息">
-                發送 &#10148;
-            </button>
-        </div>
-        
-        <p class="footer-note">這是一個初步的溝通輔助工具，無法替代專業建議或真實的家庭對話。</p>
-    </div>
+    <section class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="max-w-4xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">常見問題</span>                
+                </h2>                
+                <p class="text-xl text-gray-600 dark:text-gray-400">                    
+                    為您解答關於心橋平台的疑問                
+                </p>            
+            </div>
+            
+            <div class="space-y-6">                
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
+                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
+                        <div class="flex items-center justify-between">                            
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">心橋可以取代專業心理諮商嗎？</h3>                            
+                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
+                        </div>                    
+                    </button>                    
+                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
+                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
+                            心橋不是要取代心理諮商，而是您的日常陪伴小幫手。我們用溫暖傾聽和對話，陪您梳理心情、緩解壓力，但如果遇到需要專業協助的情況，我們建議尋求心理師的支持。想想我們像是隨時在線的好朋友，隨手聊聊，讓你不孤單！                        
+                        </div>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
+                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
+                        <div class="flex items-center justify-between">                            
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">我的對話紀錄會被其他人看到嗎？</h3>                            
+                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
+                        </div>                    
+                    </button>                    
+                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
+                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
+                            我們致力於保護您的隱私，對話全程加密。為了優化體驗，我們會儲存經過去識別化處理（移除個人身份資訊）的對話記錄，以便AI記憶您的偏好和上下文，讓互動更連貫。此匿名資料庫僅用於改善心橋服務。                        
+                        </div>                    
+                    </div>                
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
+                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
+                        <div class="flex items-center justify-between">                            
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">心橋跟ChatGPT有什麼差異？</h3>                            
+                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
+                        </div>                    
+                    </button>                    
+                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
+                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
+                            ChatGPT傾向於「給答案」，但很多時候您可能並不缺答案，而是需要有人陪您梳理混亂的思緒。心橋的設計核心不是提供解答，而是透過溫暖的傾聽，引導您進行「自我探索」，提出反思性的問題，幫助您從自己的經驗和感受中，逐漸看見更深層的需求與模式。                        
+                        </div>                    
+                    </div>                
+                </div>            
+            </div>        
+        </div>    
+    </section>
+
+    <section class="py-20 bg-gradient-to-br from-warm-orange via-warm-peach to-gentle-pink relative overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="absolute inset-0 bg-gradient-to-r from-warm-orange/20 to-gentle-pink/20"></div>                
+        <div class="relative max-w-4xl mx-auto px-6 lg:px-8 text-center text-white">            
+            <h2 class="text-4xl lg:text-6xl font-bold mb-6">                
+                開始您的溫暖對話之旅            
+            </h2>            
+            <p class="text-xl lg:text-2xl mb-8 opacity-90">                
+                讓心橋陪伴您與家人建立更深層的情感連結            
+            </p>                        
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">                
+                <button class="px-8 py-4 bg-white text-warm-orange font-semibold rounded-2xl hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-lg">                    
+                    <i class="fas fa-comments mr-2"></i>                    
+                    立即開始對話                
+                </button>                
+                <button class="px-8 py-4 border-2 border-white text-white font-semibold rounded-2xl hover:bg-white hover:text-warm-orange transition-all duration-300">                    
+                    <i class="fas fa-info-circle mr-2"></i>                    
+                    了解更多功能                
+                </button>            
+            </div>        
+        </div>    
+    </section>
+
+    <footer class="bg-gray-900 dark:bg-gray-950 text-white py-12">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="grid md:grid-cols-4 gap-8">                
+                <div class="space-y-4">                    
+                    <div class="flex items-center space-x-2">                        
+                        <i class="fas fa-heart text-2xl text-warm-orange"></i>                        
+                        <span class="text-xl font-semibold">心橋</span>                    
+                    </div>                    
+                    <p class="text-gray-400">讓每個家庭都能擁有溫暖的溝通橋樑</p>                
+                </div>                                
+                <div class="space-y-4">                    
+                    <h4 class="font-semibold">功能</h4>                    
+                    <ul class="space-y-2 text-gray-400">                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">智能對話</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">溝通指導</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">情緒支持</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">隱私保護</a></li>                    
+                    </ul>                
+                </div>                                
+                <div class="space-y-4">                    
+                    <h4 class="font-semibold">支援</h4>                    
+                    <ul class="space-y-2 text-gray-400">                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">使用指南</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">常見問題</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">聯絡我們</a></li>                        
+                        <li><a href="#" class="hover:text-warm-orange transition-colors">意見回饋</a></li>                    
+                    </ul>                
+                </div>                                
+                <div class="space-y-4">                    
+                    <h4 class="font-semibold">關注我們</h4>                    
+                    <div class="flex space-x-4">                        
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-warm-orange transition-colors">                            
+                            <i class="fab fa-facebook"></i>                        
+                        </a>                        
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-warm-orange transition-colors">                            
+                            <i class="fab fa-instagram"></i>                        
+                        </a>                        
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-warm-orange transition-colors">                            
+                            <i class="fab fa-line"></i>                        
+                        </a>                    
+                    </div>                
+                </div>            
+            </div>                        
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">                
+                <p>© 2025 鄭傳耀. 保留所有權利.</p>            
+            </div>        
+        </div>    
+    </footer>
 
     <script src="script.js"></script>
+    
+    <script>        
+        // Theme toggle functionality        
+        const themeToggle = document.getElementById('theme-toggle');        
+        const html = document.documentElement;
+        
+        // Check for saved theme preference or default to system preference        
+        const savedTheme = localStorage.getItem('theme');        
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';        
+        const initialTheme = savedTheme || systemTheme;
+        
+        html.classList.toggle('dark', initialTheme === 'dark');
+        
+        themeToggle.addEventListener('click', () => {            
+            const isDark = html.classList.contains('dark');            
+            html.classList.toggle('dark');            
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');        
+        });
+        
+        // Smooth scrolling for navigation links        
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {            
+            anchor.addEventListener('click', function (e) {                
+                e.preventDefault();                
+                const target = document.querySelector(this.getAttribute('href'));                
+                if (target) {                    
+                    target.scrollIntoView({                        
+                        behavior: 'smooth',                        
+                        block: 'start'                    
+                    });                
+                }            
+            });        
+        });
+        
+        // FAQ toggle functionality        
+        function toggleFAQ(button) {            
+            const content = button.nextElementSibling;            
+            const icon = button.querySelector('i');            
+            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+            
+            // Close all other FAQs            
+            document.querySelectorAll('.faq-content').forEach(faq => {                
+                if (faq !== content) {                    
+                    faq.style.maxHeight = '0px';                    
+                    faq.parentElement.querySelector('i').style.transform = 'rotate(0deg)';                
+                }            
+            });
+            
+            // Toggle current FAQ            
+            if (isOpen) {                
+                content.style.maxHeight = '0px';                
+                icon.style.transform = 'rotate(0deg)';            
+            } else {                
+                content.style.maxHeight = content.scrollHeight + 'px';                
+                icon.style.transform = 'rotate(180deg)';            
+            }        
+        }
+        
+        // Intersection Observer for animations        
+        const observerOptions = {            
+            threshold: 0.1,            
+            rootMargin: '0px 0px -50px 0px'        
+        };
+        
+        const observer = new IntersectionObserver((entries) => {            
+            entries.forEach(entry => {                
+                if (entry.isIntersecting) {                    
+                    entry.target.style.opacity = '1';                    
+                    entry.target.style.transform = 'translateY(0)';                
+                }            
+            });        
+        }, observerOptions);
+        
+        // Observe all sections        
+        document.querySelectorAll('section').forEach(section => {            
+            section.style.opacity = '0';            
+            section.style.transform = 'translateY(20px)';            
+            section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';            
+            observer.observe(section);        
+        });
+        
+        // Auto-scroll chat messages (確保聊天功能集成後自動滾動)
+        const chatContainer = document.querySelector('#chatArea'); // 使用新的 ID
+        if (chatContainer) {            
+            chatContainer.scrollTop = chatContainer.scrollHeight;        
+        }    
+    </script>
 </body>
 </html>
