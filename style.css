@@ -1,0 +1,91 @@
+body {
+    font-family: '微軟正黑體', sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 90%;
+    max-width: 800px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #3f51b5;
+    text-align: center;
+}
+
+p {
+    text-align: center;
+    color: #666;
+}
+
+.chat-area {
+    height: 400px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    background-color: #e8eaf6;
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.user-message {
+    background-color: #c5cae9;
+    margin-left: auto;
+    text-align: right;
+}
+
+.system-message {
+    background-color: #bbdefb;
+    margin-right: auto;
+    text-align: left;
+}
+
+.input-area {
+    display: flex;
+    gap: 10px;
+}
+
+#userInput {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none; /* 防止使用者調整大小 */
+    height: 40px;
+}
+
+#sendButton {
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#sendButton:hover {
+    background-color: #303f9f;
+}
+
+.footer-note {
+    font-size: 0.8em;
+    color: #999;
+    margin-top: 20px;
+}
