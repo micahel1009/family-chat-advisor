@@ -1,21 +1,18 @@
 // 🚨 替換成您在 Google AI Studio 取得的 API 金鑰 🚨
-// 務必將 YOUR_API_KEY_HERE 替換為您的實際金鑰，並確保金鑰在雙引號內部
 const API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
-// 取得 DOM 元素 (確保所有元素都被正確獲取)
+// 取得 DOM 元素 (略)
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
-const loadingIndicator = document.getElementById('loadingIndicator'); // <--- 確保這一行存在且正確
+const loadingIndicator = document.getElementById('loadingIndicator'); 
 
 // 顯示訊息到聊天室
 function displayMessage(content, type) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${type}-message`);
-    // 使用 innerHTML 和 <br> 讓回覆中的換行符號 (\n) 能正確顯示
     messageDiv.innerHTML = content.replace(/\n/g, '<br>'); 
     chatArea.appendChild(messageDiv);
-    // 自動捲動到底部
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
@@ -24,40 +21,39 @@ async function sendMessage() {
     const userText = userInput.value.trim();
     if (userText === '') return; 
 
-    // 1. 顯示使用者訊息
     displayMessage(userText, 'user');
-    userInput.value = ''; // 清空輸入框
+    userInput.value = '';
 
-    // 2. 禁用按鈕、輸入框並顯示讀取中提示
     sendButton.disabled = true; 
     userInput.disabled = true;
-    
-    // **錯誤修復：現在 loadingIndicator 應該是有效的元素**
     if (loadingIndicator) {
         loadingIndicator.classList.add('visible');
     }
 
-    // 3. 準備 AI 提示語 (Prompt)
-    const fullPrompt = `你是一個溫暖、主觀且富有同理心的家庭溝通顧問 AI。你的目標是針對使用者描述的家庭情境（例如：與父母/配偶/子女的爭執、誤解、壓力等），提供**三個步驟**的回覆：
-1. **溫柔的安慰** (同理心表達，肯定使用者感受)。
-2. **客觀的分析** (點出情境中可能的溝通盲點或雙方立場)。
-3. **具體的建議** (提出 1-2 個溫和、可操作的溝通方法)。
-請使用繁體中文，並將回覆分段，讓閱讀更輕鬆。情境："${userText}"`;
+    // ******************************************************
+    // *** 核心修改區塊：優化 AI 提示語 (Prompt) ***
+    // ******************************************************
+    const fullPrompt = `你是一位溫暖、簡潔、有同理心，且像朋友一樣的家庭溝通顧問 AI。你的目標是提供像真人對話般的關心與建議，避免冗長和制式化的回覆。請將你的回覆分為兩到三段，每段文字內容**不要超過 80 個字**。
 
-    // 4. API 呼叫結構：使用修正後的 generationConfig
+請針對使用者描述的家庭情境，提供以下回應：
+1. **溫暖的回應（同理與安慰）：** 用像朋友對話的語氣，肯定對方的感受，且字數要少，像真人在簡訊中表達關心。
+2. **具體的下一步建議：** 提出 1-2 個溫和、簡潔、可操作的溝通或自我照顧方法。
+請使用繁體中文，回覆時請不要使用標題（例如：1.、2. 或粗體字），只用換行隔開你的不同段落，以模擬真實對話中分段傳送訊息的感覺。情境："${userText}"`;
+    // ******************************************************
+    
+    // API 呼叫結構 (保持不變)
     const requestBody = {
         contents: [{
             role: "user",
             parts: [{ text: fullPrompt }]
         }],
-        // 錯誤修正：將 config 改為 generationConfig
         generationConfig: { 
             temperature: 0.7 
         }
     };
 
     try {
-        // 5. 呼叫 Gemini API
+        // 呼叫 Gemini API (保持不變)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
             method: 'POST',
             headers: {
@@ -68,28 +64,20 @@ async function sendMessage() {
 
         const data = await response.json();
         
-        // 6. 處理 AI 回覆
-        let aiResponse = "很抱歉，無法取得回覆。請檢查 API 金鑰是否正確，或確認您的網路連線。";
+        let aiResponse = "很抱歉，無法取得回覆。請檢查 API 金鑰是否正確。";
         
-        // 檢查是否有生成內容
         if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error) {
-             // 顯示 API 傳回的錯誤訊息，這有助於診斷金鑰問題
              aiResponse = `**API 錯誤**：無法完成請求。錯誤訊息：${data.error.message}`;
-        } else if (data.promptFeedback && data.promptFeedback.blockReason) {
-             // 處理內容審核阻止的情況
-             aiResponse = `**內容被阻止**：您的請求可能違反了內容政策，原因：${data.promptFeedback.blockReason}`;
         }
 
         displayMessage(aiResponse, 'system');
 
     } catch (error) {
         console.error("Fetch Error:", error);
-        // 如果 Fetch 本身失敗（例如網路問題），顯示錯誤訊息
-        displayMessage("發生連線錯誤，請檢查您的網路或重新整理頁面。錯誤代碼請查看瀏覽器控制台。", 'system');
+        displayMessage("發生連線錯誤，請檢查您的網路或重新整理頁面。", 'system');
     } finally {
-        // 7. 重新啟用按鈕並隱藏讀取中提示
         sendButton.disabled = false;
         userInput.disabled = false;
         if (loadingIndicator) {
@@ -99,12 +87,10 @@ async function sendMessage() {
     }
 }
 
-// 事件監聽器：點擊發送按鈕
+// 事件監聽器 (保持不變)
 sendButton.addEventListener('click', sendMessage);
 
-// 事件監聽器：按 Enter 鍵發送
 userInput.addEventListener('keydown', (e) => {
-    // 判斷：單獨按下 Enter 鍵時發送
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { 
         e.preventDefault(); 
         sendMessage();
