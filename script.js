@@ -1,6 +1,6 @@
 // 🚨 替換成您在 Google AI Studio 取得的 API 金鑰 🚨
 // 務必將 YOUR_API_KEY_HERE 替換為您的實際金鑰，並確保金鑰在雙引號內部
-const API_KEY = "AIzaSyDS5a0JuFtL1AatKxZ2oMvGlj8Y8pmLB2g"; 
+const API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
 // 取得 DOM 元素
 const chatArea = document.getElementById('chatArea');
@@ -102,5 +102,6 @@ userInput.addEventListener('keydown', (e) => {
         sendMessage();
     }
 });
+
 
 
