@@ -2,11 +2,11 @@
 // 務必將 YOUR_API_KEY_HERE 替換為您的實際金鑰，並確保金鑰在雙引號內部
 const API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
-// 取得 DOM 元素
+// 取得 DOM 元素 (確保所有元素都被正確獲取)
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
-const loadingIndicator = document.getElementById('loadingIndicator');
+const loadingIndicator = document.getElementById('loadingIndicator'); // <--- 確保這一行存在且正確
 
 // 顯示訊息到聊天室
 function displayMessage(content, type) {
@@ -31,7 +31,11 @@ async function sendMessage() {
     // 2. 禁用按鈕、輸入框並顯示讀取中提示
     sendButton.disabled = true; 
     userInput.disabled = true;
-    loadingIndicator.classList.add('visible');
+    
+    // **錯誤修復：現在 loadingIndicator 應該是有效的元素**
+    if (loadingIndicator) {
+        loadingIndicator.classList.add('visible');
+    }
 
     // 3. 準備 AI 提示語 (Prompt)
     const fullPrompt = `你是一個溫暖、主觀且富有同理心的家庭溝通顧問 AI。你的目標是針對使用者描述的家庭情境（例如：與父母/配偶/子女的爭執、誤解、壓力等），提供**三個步驟**的回覆：
@@ -71,6 +75,7 @@ async function sendMessage() {
         if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error) {
+             // 顯示 API 傳回的錯誤訊息，這有助於診斷金鑰問題
              aiResponse = `**API 錯誤**：無法完成請求。錯誤訊息：${data.error.message}`;
         } else if (data.promptFeedback && data.promptFeedback.blockReason) {
              // 處理內容審核阻止的情況
@@ -81,12 +86,15 @@ async function sendMessage() {
 
     } catch (error) {
         console.error("Fetch Error:", error);
-        displayMessage("發生連線錯誤，請檢查您的網路或重新整理頁面。", 'system');
+        // 如果 Fetch 本身失敗（例如網路問題），顯示錯誤訊息
+        displayMessage("發生連線錯誤，請檢查您的網路或重新整理頁面。錯誤代碼請查看瀏覽器控制台。", 'system');
     } finally {
         // 7. 重新啟用按鈕並隱藏讀取中提示
         sendButton.disabled = false;
         userInput.disabled = false;
-        loadingIndicator.classList.remove('visible');
+        if (loadingIndicator) {
+            loadingIndicator.classList.remove('visible');
+        }
         userInput.focus(); 
     }
 }
@@ -102,6 +110,3 @@ userInput.addEventListener('keydown', (e) => {
         sendMessage();
     }
 });
-
-
-
