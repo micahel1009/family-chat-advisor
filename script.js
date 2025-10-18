@@ -1,4 +1,5 @@
 // 🚨 替換成您在 Google AI Studio 取得的 API 金鑰 🚨
+// 務必將 YOUR_API_KEY_HERE 替換為您的實際金鑰，並確保金鑰在雙引號內部
 const API_KEY = "AIzaSyCUIibepz0j_6J2wzmnYjftC-IIL1FI28E"; 
 
 // 取得 DOM 元素
@@ -39,13 +40,13 @@ async function sendMessage() {
 3. **具體的建議** (提出 1-2 個溫和、可操作的溝通方法)。
 請使用繁體中文，並將回覆分段，讓閱讀更輕鬆。情境："${userText}"`;
 
-    // 4. 修正 API 呼叫結構：使用 generationConfig
+    // 4. API 呼叫結構：使用修正後的 generationConfig
     const requestBody = {
         contents: [{
             role: "user",
             parts: [{ text: fullPrompt }]
         }],
-        // 修正後的結構：使用 generationConfig
+        // 錯誤修正：將 config 改為 generationConfig
         generationConfig: { 
             temperature: 0.7 
         }
@@ -66,10 +67,14 @@ async function sendMessage() {
         // 6. 處理 AI 回覆
         let aiResponse = "很抱歉，無法取得回覆。請檢查 API 金鑰是否正確，或確認您的網路連線。";
         
+        // 檢查是否有生成內容
         if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error) {
              aiResponse = `**API 錯誤**：無法完成請求。錯誤訊息：${data.error.message}`;
+        } else if (data.promptFeedback && data.promptFeedback.blockReason) {
+             // 處理內容審核阻止的情況
+             aiResponse = `**內容被阻止**：您的請求可能違反了內容政策，原因：${data.promptFeedback.blockReason}`;
         }
 
         displayMessage(aiResponse, 'system');
