@@ -15,7 +15,7 @@ function displayMessage(content, type) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
-    // --- START OF TAILWIND STYLING ---
+    // --- START OF TAILWIND STYLING (與之前版本保持一致) ---
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     
     if (type === 'user') {
@@ -75,11 +75,11 @@ async function sendMessage() {
     conversationHistory.push({ role: "user", text: userText });
     conversationCount++;
 
-    // 核心 AI 提示語 (Prompt) - 包含新的角色設定和流程控制
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
+    // 修正：移除所有模仿語氣的詞彙，只強調客觀分析
     let promptInstruction = `
-    你現在是**聊聊小幫手**家庭溝通調解員，你必須保持客觀冷靜，並以「法官」的語氣和角度來分析溝通情境。
+    你現在是**聊聊小幫手**家庭溝通調解員。你的職責是**絕對客觀、中立地分析**使用者輸入的情境，並提供具體的分析結果。
     
     當前對話次數 (User Input 次數，不含開場): ${conversationCount}。
     對話紀錄：
@@ -90,18 +90,17 @@ async function sendMessage() {
     請遵循以下流程：
     
     1. **如果對話次數小於 3 (目前在分析階段)：**
-       - 你的回覆必須非常客觀、中立，分析當前情境中「雙方的立場與溝通盲點」。
+       - **回覆內容必須是高度客觀的、像一份簡潔的調查報告。** 分析當前情境中「雙方的核心訴求、潛在的溝通盲點和未達成共識的領域」。
        - 回覆必須分成 2 個簡短段落，模擬分段發送。
-       - **回覆格式：[客觀分析段落 1] ||| [客觀分析段落 2]**
-       - 你需要提出下一個「提問」，引導使用者提供更多資訊。
+       - **回覆格式：[客觀分析段落 1] ||| [客觀分析段落 2：提出下一個待釐清的問題]**
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
        - 你的回覆必須**直接跳到解決方案**。
        - 你的回覆必須分成 3 個段落，並使用 \`|||\` 分隔。
-       - **段落 1 (轉折)：** 總結調解過程，說明問題的核心已經明確。
-       - **段落 2 (提出大冒險)：** 說明現在需要一個溫馨的「大冒險」來化解僵局，並詳細說明大冒險的具體內容 (例如：擁抱、說出感謝的話)。
-       - **段落 3 (總結)：** 鼓勵使用者去執行，並結束這次對話。
-       - **回覆格式：[總結轉折] ||| [大冒險挑戰內容] ||| [溫馨結語]**
+       - **段落 1 (結論)：** 根據前面的客觀分析，簡要總結本次調解的核心結論。
+       - **段落 2 (提出大冒險)：** 說明現在需要一個溫馨的「互動挑戰」來緩解僵局，並詳細說明大冒險的具體內容 (例如：擁抱、說出感謝的話)。
+       - **段落 3 (總結)：** 鼓勵使用者去執行，並結束這次調解。
+       - **回覆格式：[總結結論] ||| [溫馨互動挑戰內容] ||| [調解結束語]**
        
     你的回覆必須僅包含 AI 建議的內容（不包含任何註解或格式說明）。
     `;
@@ -112,7 +111,7 @@ async function sendMessage() {
             parts: [{ text: promptInstruction }]
         }],
         generationConfig: { 
-            temperature: 0.8 
+            temperature: 0.7 // 保持在較低的溫度，以獲得更穩定和客觀的結果
         }
     };
 
@@ -140,7 +139,7 @@ async function sendMessage() {
         
         if (responseParts.length > 0) {
             for (const part of responseParts) {
-                await new Promise(resolve => setTimeout(resolve, 500)); // 模擬 0.5 秒的打字延遲
+                await new Promise(resolve => setTimeout(resolve, 500)); 
                 displayMessage(part, 'system');
             }
         } else {
