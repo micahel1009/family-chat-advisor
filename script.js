@@ -34,16 +34,13 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // ==============================================================
-            // ⭐️ 修正區塊：登入成功後的歡迎語 (第一順位是安撫情緒)
-            // ==============================================================
+            // 登入成功 (保持不變)
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
             sendButton.disabled = false;
             
             if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
-                // 清空聊天室
                 chatArea.innerHTML = ''; 
                 
                 // 1. 安撫情緒 (第一順位)
@@ -52,12 +49,13 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                 // 2. 溫和引導情境描述
                 setTimeout(() => {
                     displayMessage(`我知道您來到這裡，心裡一定承載著一些重量。請先放鬆，不需要太命令的格式。您只需要告訴我：最近發生了什麼事情，或讓您感到不舒服的情境是什麼？`, 'system');
-                }, 1500); // 延遲 1.5 秒，模擬分段發送
+                }, 1500);
             }
-            // ==============================================================
 
         } else {
-            // 未登入 (保持不變)
+            // ==============================================================
+            // ⭐️ 修正區塊：未登入時的溫柔提示語
+            // ==============================================================
             authButton.innerText = "使用 Gmail 登入";
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
@@ -67,8 +65,10 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             conversationCount = 0;
             
             chatArea.innerHTML = '';
-            // 這是 Firebase 認證必須的提示，語氣保持中性
-            displayMessage(`請先點擊首頁上的「${authButton.innerText}」按鈕進行登入。只有登入後才能開始調解服務。`, 'system');
+            // 溫柔提示，引導使用者點擊首頁按鈕
+            displayMessage(`你好！為了給您創造一個**絕對安全且私密的聊聊空間**，我們需要您簡單登入。
+請點擊首頁畫面上的「使用 Gmail 登入」按鈕，我們在這裡等您，隨時準備傾聽您的心事。`, 'system');
+            // ==============================================================
         }
     });
 }
