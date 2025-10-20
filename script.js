@@ -34,7 +34,9 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // 登入成功 (保持不變)
+            // ==============================================================
+            // ⭐️ 修正區塊：登入成功後的三段式安撫與引導
+            // ==============================================================
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
@@ -42,20 +44,25 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             
             if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
                 chatArea.innerHTML = ''; 
+                const userName = user.displayName.split(' ')[0];
                 
-                // 1. 安撫情緒 (第一順位)
-                displayMessage(`歡迎回來，${user.displayName.split(' ')[0]}！能再次為您服務，我感到很溫暖。`, 'system');
+                // 第一段：安撫情緒與同理心（最重要）
+                displayMessage(`歡迎回來，${userName}！能再次看到您，我感到很溫暖。我知道您現在的心情一定很複雜，請先深呼吸。`, 'system');
                 
-                // 2. 溫和引導情境描述
+                // 第二段：給予空間與柔性引導（1.5秒後發送）
                 setTimeout(() => {
-                    displayMessage(`我知道您來到這裡，心裡一定承載著一些重量。請先放鬆，不需要太命令的格式。您只需要告訴我：最近發生了什麼事情，或讓您感到不舒服的情境是什麼？`, 'system');
-                }, 1500);
+                    displayMessage(`這裡是一個完全屬於您的安全空間，不需要著急。當您準備好時，隨時都可以告訴我：**最近發生了什麼，或是什麼事情讓您感到特別不舒服？**`, 'system');
+                }, 1500); 
+                
+                // 第三段：提醒最終目標（3秒後發送）
+                setTimeout(() => {
+                    displayMessage(`請記住，我們的最終目標是找到一個溫馨的互動挑戰（類似大冒險），來幫助您化解這次的矛盾。我會全程陪伴您。`, 'system');
+                }, 3000); 
             }
+            // ==============================================================
 
         } else {
-            // ==============================================================
-            // ⭐️ 修正區塊：未登入時的溫柔提示語
-            // ==============================================================
+            // 未登入 (保持不變)
             authButton.innerText = "使用 Gmail 登入";
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
@@ -65,10 +72,8 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             conversationCount = 0;
             
             chatArea.innerHTML = '';
-            // 溫柔提示，引導使用者點擊首頁按鈕
             displayMessage(`你好！為了給您創造一個**絕對安全且私密的聊聊空間**，我們需要您簡單登入。
 請點擊首頁畫面上的「使用 Gmail 登入」按鈕，我們在這裡等您，隨時準備傾聽您的心事。`, 'system');
-            // ==============================================================
         }
     });
 }
