@@ -30,28 +30,32 @@
         }
     </script>
     
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
+            authDomain: "familychatadvisor.firebaseapp.com",
+            projectId: "familychatadvisor",
+            storageBucket: "familychatadvisor.appspot.com", // 兼容性修正：通常為 appspot.com
+            messagingSenderId: "172272099421",
+            appId: "1:172272099421:web:a67b69291419194189edb4"
+            // measurementId: "G-SRY5B3JV85" (Analytics 可省略以簡化)
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
     <script src="https://felo.ai/js/iframe.js?v=1760807775618"></script> 
     <style>
-        * {
-            scrollbar-width: thin !important;
-            scrollbar-color: #bfc5ce transparent !important;
-        }
-        *::-webkit-scrollbar {
-            width: 6px !important;
-        }
-        *::-webkit-scrollbar-thumb {
-            background-color: #bfc5ce !important;
-            border-radius: 9999px !important;
-        }
-        *::-webkit-scrollbar-track {
-            background-color: transparent !important;
-            border-radius: 9999px !important;
-        }
+        * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
+        *::-webkit-scrollbar { width: 6px !important;}
+        *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
+        *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
     </style>
     <style data-id="immersive-translate-input-injected-css">
         .immersive-translate-input {  position: absolute;  top: 0;  right: 0;  left: 0;  bottom: 0;  z-index: 2147483647;  display: flex;  justify-content: center;  align-items: center;}
         .immersive-translate-modal input[type="radio"] {  margin: 0 6px;  cursor: pointer;}
-        /* ... (為了程式碼的有效性，請保留您原始樣式中所有內容) ... */
         .imt-linear-black-btn {  border-radius: 50px;  background: linear-gradient(66deg, #222 19%, #696969 94.25%);  height: 48px;  width: 100%;  color: #fff;  font-size: 16px;  font-weight: 700;  display: flex;  align-items: center;  cursor: pointer;  justify-content: center;}
     </style>
     <style id="felo-iframe-styles">html,body{margin:0 !important;padding:0 !important;}</style>
@@ -71,6 +75,10 @@
                     <a href="#features" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">功能特色</a>                    
                     <a href="#communication" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">溝通技巧</a>                                        
                 </div>
+                
+                <button id="authButton" class="px-3 py-2 text-sm font-medium rounded-lg text-white bg-warm-orange hover:bg-warm-peach transition-colors">
+                    載入登入狀態...
+                </button>
                 <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
                     <i class="fas fa-sun dark:hidden"></i>                    
                     <i class="fas fa-moon hidden dark:inline"></i>                
@@ -145,19 +153,6 @@
                     </div>
 
                     <div id="chatArea" class="p-6 space-y-4 h-96 overflow-y-auto">
-                        
-                        <div class="flex items-start space-x-3">
-                            <div class="w-8 h-8 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-heart text-white text-xs"></i>
-                            </div>
-                            <div class="bg-gradient-to-r from-orange-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-2xl rounded-tl-none max-w-md message system-message">
-                                **聊聊小幫手調解室啟用**
-                                <br>
-                                我是你們的家庭溝通調解員。請將你遇到的**完整情境**輸入給我，我會從客觀角度分析問題。
-                                <br>
-                                (請直接告訴我：你和誰，因為什麼事感到不愉快？)
-                            </div>
-                        </div>
                         
                         <div id="loadingIndicator" class="loading-indicator text-center text-sm text-gray-500 dark:text-gray-400 p-2 hidden">
                             AI 顧問正在思考中...
@@ -538,7 +533,7 @@
             });        
         }, observerOptions);
         
-        // Observe all sections        
+        // Observe all sections (保持原樣)
         document.querySelectorAll('section').forEach(section => {            
             section.style.opacity = '0';            
             section.style.transform = 'translateY(20px)';            
