@@ -34,13 +34,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", // 替換為您自己的值
             authDomain: "familychatadvisor.firebaseapp.com",
             projectId: "familychatadvisor",
-            storageBucket: "familychatadvisor.appspot.com", // 兼容性修正：通常為 appspot.com
+            storageBucket: "familychatadvisor.appspot.com",
             messagingSenderId: "172272099421",
             appId: "1:172272099421:web:a67b69291419194189edb4"
-            // measurementId: "G-SRY5B3JV85" (Analytics 可省略以簡化)
         };
 
         // 初始化 Firebase
@@ -76,9 +75,6 @@
                     <a href="#communication" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">溝通技巧</a>                                        
                 </div>
                 
-                <button id="authButton" class="px-3 py-2 text-sm font-medium rounded-lg text-white bg-warm-orange hover:bg-warm-peach transition-colors">
-                    載入登入狀態...
-                </button>
                 <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
                     <i class="fas fa-sun dark:hidden"></i>                    
                     <i class="fas fa-moon hidden dark:inline"></i>                
@@ -101,13 +97,17 @@
                     </p>                
                 </div>                                
                 
+                <button id="authButton" class="px-6 py-3 text-sm font-medium rounded-lg text-white bg-warm-orange hover:bg-warm-peach transition-colors shadow-lg">
+                    載入登入狀態...
+                </button>
+                
                 <div class="flex items-center space-x-8 text-sm text-gray-500 dark:text-gray-400" style="position: relative; width: 225px; height: 20px; top: 5px; left: -32px;">                    
                     <div class="flex items-center space-x-2">                        
                         <span style="position: relative; top: 0px; left: 0px; width: 91.0208px; height: 20px;">&nbsp;</span>                    
                     </div>                    
-                    <div class="flex items-center space-x-2">                        
-                        <i class="fas fa-clock text-warm-orange" style="position: relative; top: 3px; left: -94px;"></i>                        
-                        <span style="position: relative; top: 3px; left: -92px;">24小時陪伴</span>                    
+                    <div class="flex items-center space-x-2" style="position: relative; top: 3px; left: -94px;">                        
+                        <i class="fas fa-clock text-warm-orange" style="position: relative; top: 3px; left: 0px;"></i>                        
+                        <span style="position: relative; top: 3px; left: 2px;">24小時陪伴</span>                    
                     </div>                
                 </div>            
             </div>
@@ -126,7 +126,6 @@
         </div>    
     </section>
 
-    
     <section id="chat" class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16">                
