@@ -1,21 +1,83 @@
-// 🚨 替換成您在 Google AI Studio 取得的 API 金鑰 🚨
-const API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
+// 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
+const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
+const authButton = document.getElementById('authButton'); // 獲取登入/登出按鈕
 
 // 全域變數：用於追蹤對話歷史和計數器
 let conversationHistory = [];
-let conversationCount = 0; // 對話計數器，達到 3 次後觸發大冒險
+let conversationCount = 0; 
 
-// 顯示訊息到聊天室 (已整合 Tailwind 樣式)
+// --- AUTHENTICATION FUNCTIONS ---
+
+function signInWithGoogle() {
+    // 檢查 Firebase 是否已初始化
+    if (!firebase || !firebase.auth) {
+         displayMessage("Firebase 認證服務未載入。請檢查 index.html 中的 Firebase SDK 配置。", 'system');
+         return;
+    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .catch((error) => {
+            console.error("Google 登入錯誤:", error.message);
+            alert("登入失敗: " + error.message);
+        });
+}
+
+function signOutUser() {
+    firebase.auth().signOut();
+}
+
+// 監聽登入狀態的變化
+// 確保在 Firebase SDK 載入後立即執行
+if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            // 已登入
+            authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; // 顯示名字並簡化
+            authButton.onclick = signOutUser;
+            userInput.placeholder = "輸入您的情境...";
+            sendButton.disabled = false;
+            
+            // 只有在聊天室是空的，才顯示歡迎語 (避免重複)
+            if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
+                // 清空載入前的提示
+                chatArea.innerHTML = '';
+                // 顯示初始歡迎語 (調解室開場)
+                displayMessage(`**聊聊小幫手調解室啟用**
+我現在是你們的家庭溝通調解員。請將你遇到的**完整情境**輸入給我，我會從客觀角度分析問題。
+(請直接告訴我：你和誰，因為什麼事感到不愉快？)`, 'system');
+            }
+
+        } else {
+            // 未登入
+            authButton.innerText = "使用 Gmail 登入";
+            authButton.onclick = signInWithGoogle;
+            userInput.placeholder = "請先登入才能開始對話。";
+            sendButton.disabled = true;
+            
+            // 清除歷史記錄
+            conversationHistory = [];
+            conversationCount = 0;
+            
+            // 清空並顯示登入提示
+            chatArea.innerHTML = '';
+            displayMessage(`請先點擊右上角的「${authButton.innerText}」按鈕進行登入。只有登入後才能開始調解服務。`, 'system');
+        }
+    });
+}
+
+
+// --- CHAT FUNCTIONS (使用您最終確認的邏輯) ---
+
 function displayMessage(content, type) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
-    // --- START OF TAILWIND STYLING (與之前版本保持一致) ---
+    // --- Tailwind 樣式代碼 ---
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     
     if (type === 'user') {
@@ -33,7 +95,6 @@ function displayMessage(content, type) {
         messageContainer.appendChild(userIcon);
         
     } else {
-        // 系統訊息：模擬群聊發言，靠左對齊
         messageContainer.classList.remove('space-x-3');
         messageContainer.classList.add('space-x-3');
         
@@ -51,14 +112,19 @@ function displayMessage(content, type) {
         messageContainer.appendChild(messageBubble);
     }
     
-    messageBubble.innerText = content.trim(); 
+    // 讓 AI 回覆的換行可以正確顯示
+    messageBubble.innerHTML = content.trim().replace(/\n/g, '<br>');
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
 }
-// --- END OF TAILWIND STYLING ---
 
 
 async function sendMessage() {
+    if (!firebase.auth().currentUser) {
+        displayMessage("您尚未登入，請先登入才能開始對話。", 'system');
+        return;
+    }
+    
     const userText = userInput.value.trim();
     if (userText === '') return; 
 
@@ -71,12 +137,12 @@ async function sendMessage() {
         loadingIndicator.classList.remove('hidden');
     }
 
-    // 更新對話歷史
     conversationHistory.push({ role: "user", text: userText });
     conversationCount++;
 
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
+    // 核心 AI 提示語 (Prompt) - 最終修正版
     let promptInstruction = `
     你現在是**聊聊小幫手**家庭溝通調解員。你的職責是**絕對客觀、中立地分析**使用者輸入的情境，並提供具體的分析結果。請使用中性、溫和但精確的語言進行描述，不要使用「本庭審酌」、「當事人」、「判決」等法律或過度生硬的詞彙。
     
@@ -114,14 +180,14 @@ async function sendMessage() {
             parts: [{ text: promptInstruction }]
         }],
         generationConfig: { 
-            temperature: 0.8 
+            temperature: 0.7 
         }
     };
 
     let aiResponse = "連線失敗，無法取得回覆。";
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
@@ -137,12 +203,11 @@ async function sendMessage() {
              conversationCount--;
         }
         
-        // 核心修改區塊：分割並依序顯示每個段落
         const responseParts = aiResponse.split('|||').map(part => part.trim()).filter(part => part.length > 0);
         
         if (responseParts.length > 0) {
             for (const part of responseParts) {
-                await new Promise(resolve => setTimeout(resolve, 500)); // 模擬 0.5 秒的打字延遲
+                await new Promise(resolve => setTimeout(resolve, 500)); 
                 displayMessage(part, 'system');
             }
         } else {
