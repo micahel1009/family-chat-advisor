@@ -9,10 +9,9 @@ const authButton = document.getElementById('authButton');
 
 // 全域變數：用於追蹤對話歷史和計數器
 let conversationHistory = [];
-let conversationCount = 0; 
+let conversationCount = 0; // 對話計數器
 
 // --- AUTHENTICATION FUNCTIONS (保持不變) ---
-
 function signInWithGoogle() {
     if (!firebase || !firebase.auth) {
          displayMessage("Firebase 認證服務未載入。請檢查 index.html 中的 Firebase SDK 配置。", 'system');
@@ -34,9 +33,7 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // ==============================================================
-            // ⭐️ 修正區塊：登入成功後的三段式安撫與引導 (已溫和化)
-            // ==============================================================
+            // 修正：登入成功時的歡迎語
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
@@ -46,20 +43,24 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                 chatArea.innerHTML = ''; 
                 const userName = user.displayName.split(' ')[0];
                 
-                // 第一段：安撫情緒與同理心（最重要）
-                displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先讓我給您一個溫暖的空間，深呼吸。`, 'system');
+                // 修正：將歡迎語分成三段發送
+                // 第一段：安撫情緒與同理心
+                displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`, 'system');
                 
-                // 第二段：給予空間與柔性引導（1.5秒後發送）
+                // 第二段：給予空間與柔性引導
                 setTimeout(() => {
-                    displayMessage(`請不用擔心，這裡絕對安全。當您準備好時，您只需要告訴我：**是什麼事情讓您感到不舒服，或是最近發生了什麼？**`, 'system');
+                    displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：**是什麼事情讓您感到不舒服，或是最近發生了什麼？**`, 'system');
                 }, 1500); 
                 
-                // 第三段：提醒最終目標（3秒後發送）
+                // 第三段：提醒最終目標
                 setTimeout(() => {
-                    displayMessage(`我們的目標是透過溫和的對話，一起找到一個能化解矛盾的「互動挑戰」！我會全程陪伴您。`, 'system');
+                    displayMessage(`我們的目標是找到一個能化解矛盾的「互動挑戰」！我會全程陪伴您。`, 'system');
                 }, 3000); 
+                
+                // 修正：為了讓 AI 第一次實際回覆時就執行安撫，我們將 conversationCount 保持為 0。
+                conversationCount = 0;
+                conversationHistory = [];
             }
-            // ==============================================================
 
         } else {
             // 未登入 (保持不變)
@@ -144,16 +145,19 @@ async function sendMessage() {
         loadingIndicator.classList.remove('hidden');
     }
 
-    conversationHistory.push({ role: "user", text: userText });
-    conversationCount++;
+    // 只有在不是由 Firebase Auth 觸發時才計數
+    if (conversationCount >= 0) {
+        conversationHistory.push({ role: "user", text: userText });
+        conversationCount++;
+    }
 
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
-    // 核心 AI 提示語 (Prompt) - 全程安撫優先，移除生硬詞彙
+    // 核心 AI 提示語 (Prompt) - 最終修正版：全程安撫優先
     let promptInstruction = `
-    你現在是**聊聊小幫手**家庭溝通引導者。你的職責是**永遠將安撫情緒放在第一位**。請保持溫和、同理心、不帶任何壓迫感的語氣。即使在分析情境時，也要使用柔和的詞彙。
+    你現在是**聊聊小幫手**家庭溝通引導者。你的職責是**永遠將安撫情緒和給予同理心放在第一位**。請保持溫和、有溫度、不帶任何壓迫感的語氣。
     
-    當前對話次數 (User Input 次數，不含開場): ${conversationCount}。
+    當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
     ---
     ${currentHistory}
@@ -161,13 +165,14 @@ async function sendMessage() {
     
     請遵循以下流程：
     
-    1. **如果對話次數小於 3 (目前在引導分析階段)：**
+    1. **如果使用者實際輸入次數小於 3 (目前在引導分析階段)：**
        - **回覆結構必須是：[同理心安撫與肯定感受] ||| [溫和的引導與釐清問題]**。
-       - **回覆內容**：不要使用「客觀分析」、「釐清」或「訴求」等生硬詞彙。改用「我看到...」、「這讓您感到...」、「我們可以一起來理解...」等表達。
-       - 回覆必須分成 2 個簡短段落，模擬分段發送。
+       - **回覆內容**：嚴禁使用「客觀分析」、「釐清」、「訴求」或「當事人」等生硬詞彙。
+       - **安撫段落：** 必須針對使用者描述的情緒（例如「很累」、「生氣」、「不知道怎麼辦」）給予肯定和安慰。
+       - **提問段落：** 必須使用柔和的詞語，如「我們可以一起來看看」、「想請您多說一點」來引導使用者提供細節。
        - **回覆格式：[安撫與同理段落] ||| [溫和提問，引導下一個細節]**
        
-    2. **如果對話次數大於等於 3 (轉折與大冒險)：**
+    2. **如果使用者實際輸入次數大於等於 3 (轉折與大冒險)：**
        - 你的回覆必須**直接跳到解決方案**。
        - 你的回覆必須分成 3 個段落，並使用 \`|||\` 分隔。
        - **段落 1 (總結)：** 溫和地總結你們共同釐清的核心，表達對使用者的支持和肯定。
@@ -176,7 +181,7 @@ async function sendMessage() {
             * **挑戰 B (肢體暖心)：** 讓使用者給予對方一個溫暖的、長度超過五秒的擁抱，或輕輕拍對方的背部，表達無聲的支持。
             * **挑戰 C (共識重建)：** 邀請使用者與對方共同完成一件 15 分鐘內的簡單家務或共同活動，並在過程中只專注於合作，不談論矛盾。
             * **挑戰 D (換位思考)：** 讓使用者寫下對方在本次矛盾中的三個真實感受，然後與對方交換閱讀並確認。
-       - **段落 3 (鼓勵與開放式結語)：** 提供溫暖的鼓勵與支持，讓使用者知道他們隨時可以回來分享結果或討論後續的感受與困難，保持對話的開放性。不要使用任何表達服務「結束」或「到此為止」的詞彙。
+       - **段落 3 (鼓勵與開放式結語)：** 提供溫暖的鼓勵與支持，讓使用者知道他們隨時可以回來分享結果或討論後續的感受與困難，保持對話的開放性。
        - **回覆格式：[溫和總結] ||| [溫馨互動挑戰內容] ||| [鼓勵與開放式結語]**
        
     你的回覆必須僅包含 AI 建議的內容（不包含任何註解或格式說明）。
@@ -188,7 +193,7 @@ async function sendMessage() {
             parts: [{ text: promptInstruction }]
         }],
         generationConfig: { 
-            temperature: 0.8 // 提高到 0.8，確保 AI 能夠更靈活地運用安撫語氣
+            temperature: 0.8 // 提高創意度，讓安撫語氣更豐富
         }
     };
 
