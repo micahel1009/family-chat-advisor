@@ -5,16 +5,15 @@ const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
-const authButton = document.getElementById('authButton'); // 獲取登入/登出按鈕
+const authButton = document.getElementById('authButton');
 
 // 全域變數：用於追蹤對話歷史和計數器
 let conversationHistory = [];
 let conversationCount = 0; 
 
-// --- AUTHENTICATION FUNCTIONS ---
+// --- AUTHENTICATION FUNCTIONS (保持不變) ---
 
 function signInWithGoogle() {
-    // 檢查 Firebase 是否已初始化
     if (!firebase || !firebase.auth) {
          displayMessage("Firebase 認證服務未載入。請檢查 index.html 中的 Firebase SDK 配置。", 'system');
          return;
@@ -32,46 +31,50 @@ function signOutUser() {
 }
 
 // 監聽登入狀態的變化
-// 確保在 Firebase SDK 載入後立即執行
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // 已登入
-            authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; // 顯示名字並簡化
+            // ==============================================================
+            // ⭐️ 修正區塊：登入成功後的歡迎語 (第一順位是安撫情緒)
+            // ==============================================================
+            authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
             sendButton.disabled = false;
             
-            // 只有在聊天室是空的，才顯示歡迎語 (避免重複)
             if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
-                // 清空載入前的提示
-                chatArea.innerHTML = '';
-                // 顯示初始歡迎語 (調解室開場)
-                displayMessage(`**聊聊小幫手調解室啟用**
-我現在是你們的家庭溝通調解員。請將你遇到的**完整情境**輸入給我，我會從客觀角度分析問題。
-(請直接告訴我：你和誰，因為什麼事感到不愉快？)`, 'system');
+                // 清空聊天室
+                chatArea.innerHTML = ''; 
+                
+                // 1. 安撫情緒 (第一順位)
+                displayMessage(`歡迎回來，${user.displayName.split(' ')[0]}！能再次為您服務，我感到很溫暖。`, 'system');
+                
+                // 2. 溫和引導情境描述
+                setTimeout(() => {
+                    displayMessage(`我知道您來到這裡，心裡一定承載著一些重量。請先放鬆，不需要太命令的格式。您只需要告訴我：最近發生了什麼事情，或讓您感到不舒服的情境是什麼？`, 'system');
+                }, 1500); // 延遲 1.5 秒，模擬分段發送
             }
+            // ==============================================================
 
         } else {
-            // 未登入
+            // 未登入 (保持不變)
             authButton.innerText = "使用 Gmail 登入";
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
             sendButton.disabled = true;
             
-            // 清除歷史記錄
             conversationHistory = [];
             conversationCount = 0;
             
-            // 清空並顯示登入提示
             chatArea.innerHTML = '';
-            displayMessage(`請先點擊右上角的「${authButton.innerText}」按鈕進行登入。只有登入後才能開始調解服務。`, 'system');
+            // 這是 Firebase 認證必須的提示，語氣保持中性
+            displayMessage(`請先點擊首頁上的「${authButton.innerText}」按鈕進行登入。只有登入後才能開始調解服務。`, 'system');
         }
     });
 }
 
 
-// --- CHAT FUNCTIONS (使用您最終確認的邏輯) ---
+// --- CHAT FUNCTIONS (保持不變) ---
 
 function displayMessage(content, type) {
     const messageContainer = document.createElement('div');
@@ -112,7 +115,6 @@ function displayMessage(content, type) {
         messageContainer.appendChild(messageBubble);
     }
     
-    // 讓 AI 回覆的換行可以正確顯示
     messageBubble.innerHTML = content.trim().replace(/\n/g, '<br>');
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
@@ -142,7 +144,7 @@ async function sendMessage() {
 
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
-    // 核心 AI 提示語 (Prompt) - 最終修正版
+    // 核心 AI 提示語 (Prompt) - 保持最終客觀分析邏輯
     let promptInstruction = `
     你現在是**聊聊小幫手**家庭溝通調解員。你的職責是**絕對客觀、中立地分析**使用者輸入的情境，並提供具體的分析結果。請使用中性、溫和但精確的語言進行描述，不要使用「本庭審酌」、「當事人」、「判決」等法律或過度生硬的詞彙。
     
