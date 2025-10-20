@@ -33,6 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
+        // ⚠️ 貼上您從 Firebase 複製的實際配置！
         const firebaseConfig = {
             apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", // 替換為您自己的值
             authDomain: "familychatadvisor.firebaseapp.com",
@@ -160,10 +161,11 @@
                     </div>
                     
                     <div class="p-6 border-t border-gray-200 dark:border-gray-600">
-                        <div class="flex items-center space-x-4">
-                            <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-1 p-4 border border-gray-200 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none">
-                            <button id="sendButton" class="w-12 h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform">
-                                <i class="fas fa-paper-plane"></i>
+                        <div class="flex items-end space-x-3">
+                            <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
+                            
+                            <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
+                                <i class="fas fa-paper-plane text-sm md:text-base"></i>
                             </button>
                         </div>
                     </div>
