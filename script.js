@@ -35,7 +35,7 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             // ==============================================================
-            // ⭐️ 修正區塊：登入成功後的回訪者安撫簡化
+            // ⭐️ 修正區塊：登入成功後移除目標提醒
             // ==============================================================
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
@@ -46,16 +46,16 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                 chatArea.innerHTML = ''; 
                 const userName = user.displayName.split(' ')[0];
                 
-                // 修正：移除提醒目標的第三個氣泡
-                
                 // 第一段：溫暖歡迎與安撫情緒
-                displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。我會全程陪伴您。`, 'system');
+                displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`, 'system');
                 
                 // 第二段：給予空間與柔性引導（1.5秒後發送）
                 setTimeout(() => {
                     displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：**是什麼事情讓您感到不舒服，或是最近發生了什麼？**`, 'system');
                 }, 1500); 
                 
+                // ⚠️ 移除的第三段：不再提醒目標，流程更自然。
+
                 // 重置計數器
                 conversationCount = 0;
                 conversationHistory = [];
