@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Re:Family - 溫暖家庭溝通平台</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     
     <script>
+        // Tailwind 配置：確保顏色和字體正確
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -33,9 +34,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
-        // ⚠️ 貼上您從 Firebase 複製的實際配置！
+        // ⚠️ 請替換成您從 Firebase 複製的實際配置！
         const firebaseConfig = {
-            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", // 替換為您自己的值
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", 
             authDomain: "familychatadvisor.firebaseapp.com",
             projectId: "familychatadvisor",
             storageBucket: "familychatadvisor.appspot.com",
@@ -46,21 +47,19 @@
         // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
     </script>
-    <script src="https://felo.ai/js/iframe.js?v=1760807775618"></script> 
     <style>
-        * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
-        *::-webkit-scrollbar { width: 6px !important;}
-        *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
-        *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
+        .loading-indicator {
+            transition: opacity 0.3s ease;
+        }
+        /* 確保 body 樣式一致 */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #FFF7F4 0%, #FFF4F8 100%);
+            color: #1F2937;
+        }
     </style>
-    <style data-id="immersive-translate-input-injected-css">
-        .immersive-translate-input {  position: absolute;  top: 0;  right: 0;  left: 0;  bottom: 0;  z-index: 2147483647;  display: flex;  justify-content: center;  align-items: center;}
-        .immersive-translate-modal input[type="radio"] {  margin: 0 6px;  cursor: pointer;}
-        .imt-linear-black-btn {  border-radius: 50px;  background: linear-gradient(66deg, #222 19%, #696969 94.25%);  height: 48px;  width: 100%;  color: #fff;  font-size: 16px;  font-weight: 700;  display: flex;  align-items: center;  cursor: pointer;  justify-content: center;}
-    </style>
-    <style id="felo-iframe-styles">html,body{margin:0 !important;padding:0 !important;}</style>
 </head>
-<body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" contenteditable="false" spellcheck="false" style="cursor: default;">
+<body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" style="cursor: default;">
     
     <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-orange-100 dark:border-gray-700">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
@@ -211,7 +210,7 @@
                         <p class="text-gray-600 dark:text-gray-400">引導您學會穩定情緒、專注聆聽、理解對方並清晰表達，讓對話更有效。</p>                
                     </div>
                     
-                    <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:-shadow-xl transition-all duration-300 hover:-translate-y-2">                    
                         <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
                             <i class="fas fa-clock text-2xl text-white"></i>                    
                         </div>                    
@@ -235,7 +234,7 @@
                         <p class="text-gray-600 dark:text-gray-400">根據您的情況，提供量身定制的溝通小技巧和情緒調整方法。</p>                
                     </div>
                     
-                    <div class="group p-8 bg-gradient-to-br from-white to-purple-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:-shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-purple-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
                         <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
                             <i class="fas fa-brain text-2xl text-white"></i>                    
                         </div>                    
