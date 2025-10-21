@@ -34,9 +34,7 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // ==============================================================
-            // ⭐️ 修正區塊：登入成功後的分段式歡迎 (模擬真人連續發送)
-            // ==============================================================
+            // 登入成功
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
@@ -47,24 +45,23 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                 chatArea.innerHTML = ''; 
                 const userName = user.displayName.split(' ')[0];
                 
-                // 第一段：溫暖歡迎與安撫情緒
+                // 第一段：溫暖歡迎與安撫情緒 (已移除粗體)
                 displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`, 'system');
                 
-                // 第二段：給予空間與柔性引導（1.5秒後發送）
+                // 第二段：給予空間與柔性引導（1.5秒後發送）(已移除粗體)
                 setTimeout(() => {
-                    displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：**是什麼事情讓您感到不舒服，或是最近發生了什麼？**`, 'system');
+                    displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system');
                 }, 1500); 
-                
-                // ⚠️ 修正：我們不再發送第三段目標提醒。
                 
                 // 重置計數器
                 conversationCount = 0;
                 conversationHistory = [];
             }
-            // ==============================================================
 
         } else {
-            // 未登入 (保持不變)
+            // ==============================================================
+            // ⭐️ 修正區塊：未登入時的提示語 (移除粗體 `**`)
+            // ==============================================================
             authButton.innerText = "使用 Gmail 登入";
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
@@ -75,17 +72,18 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             conversationCount = 0;
             
             chatArea.innerHTML = '';
-            // 未登入提示 (保持分段，模擬真人解釋)
-            displayMessage(`你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個**完全私密且只屬於您的空間**。`, 'system');
+            // 修正：移除所有粗體符號 **
+            displayMessage(`你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個完全私密且只屬於您的空間。`, 'system');
             setTimeout(() => {
                 displayMessage(`為了確保您的心事不會被別人看到，需要您簡單點擊首頁上的「使用 Gmail 登入」按鈕。我們在這裡等您，隨時準備傾聽您的心事。`, 'system');
-            }, 2000); // 這裡延遲 2 秒，避免訊息一次發完
+            }, 2000);
+            // ==============================================================
         }
     });
 }
 
 
-// --- CHAT FUNCTIONS (核心邏輯保持不變) ---
+// --- CHAT FUNCTIONS (核心邏輯保持不變，但 Prompt 會約束 AI 不用粗體) ---
 
 function displayMessage(content, type) {
     const messageContainer = document.createElement('div');
@@ -126,6 +124,7 @@ function displayMessage(content, type) {
         messageContainer.appendChild(messageBubble);
     }
     
+    // 這裡我們使用 innerHTML，因為 AI 的回覆中可能包含換行符號
     messageBubble.innerHTML = content.trim().replace(/\n/g, '<br>');
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
@@ -155,9 +154,11 @@ async function sendMessage() {
 
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
-    // 核心 AI 提示語 (Prompt) - 保持最終邏輯
+    // 核心 AI 提示語 (Prompt) - 最終修正版：明確要求不使用粗體
     let promptInstruction = `
     你現在是**聊聊小幫手**家庭溝通引導者。你的職責是**永遠將安撫情緒和給予同理心放在第一位**。請保持溫和、有溫度、不帶任何壓迫感的語氣。
+    
+    **重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。**
     
     當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
