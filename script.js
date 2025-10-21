@@ -34,12 +34,13 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // 已登入狀態 (保持不變)
+            // ==============================================================
+            // ⭐️ 修正區塊：登入成功後的分段式歡迎 (模擬真人連續發送)
+            // ==============================================================
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
             sendButton.disabled = false;
-            // 啟用輸入框
             userInput.disabled = false;
             
             if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
@@ -54,29 +55,31 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                     displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：**是什麼事情讓您感到不舒服，或是最近發生了什麼？**`, 'system');
                 }, 1500); 
                 
+                // ⚠️ 修正：我們不再發送第三段目標提醒。
+                
                 // 重置計數器
                 conversationCount = 0;
                 conversationHistory = [];
             }
+            // ==============================================================
 
         } else {
-            // ==============================================================
-            // ⭐️ 修正區塊：未登入時禁用輸入框
-            // ==============================================================
+            // 未登入 (保持不變)
             authButton.innerText = "使用 Gmail 登入";
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
             sendButton.disabled = true;
-            // ⚠️ 新增：禁用輸入框
-            userInput.disabled = true; 
+            userInput.disabled = true;
             
             conversationHistory = [];
             conversationCount = 0;
             
             chatArea.innerHTML = '';
-            displayMessage(`你好！為了給您創造一個**絕對安全且私密的聊聊空間**，我們需要您簡單登入。
-請點擊首頁畫面上的「使用 Gmail 登入」按鈕，我們在這裡等您，隨時準備傾聽您的心事。`, 'system');
-            // ==============================================================
+            // 未登入提示 (保持分段，模擬真人解釋)
+            displayMessage(`你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個**完全私密且只屬於您的空間**。`, 'system');
+            setTimeout(() => {
+                displayMessage(`為了確保您的心事不會被別人看到，需要您簡單點擊首頁上的「使用 Gmail 登入」按鈕。我們在這裡等您，隨時準備傾聽您的心事。`, 'system');
+            }, 2000); // 這裡延遲 2 秒，避免訊息一次發完
         }
     });
 }
