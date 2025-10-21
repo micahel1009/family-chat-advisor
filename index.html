@@ -127,7 +127,7 @@
         </div>    
     </section>
 
-    <section id="chat" class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+    <section id="chat" class="py-20" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16">                
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
@@ -152,27 +152,30 @@
                         </div>
                     </div>
 
-                    <div id="chatArea" class="p-6 space-y-4 h-96 overflow-y-auto">
+                    <div id="chatArea" class="p-6 space-y-4 overflow-y-auto" style="height: 400px; padding-bottom: 100px;">
                         
                         <div id="loadingIndicator" class="loading-indicator text-center text-sm text-gray-500 dark:text-gray-400 p-2 hidden">
                             AI 顧問正在思考中...
                         </div>
                         
                     </div>
-                    
-                    <div class="p-6 border-t border-gray-200 dark:border-gray-600">
-                        <div class="flex items-end space-x-3">
-                            <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
-                            
-                            <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
-                                <i class="fas fa-paper-plane text-sm md:text-base"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
+    
+    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-xl p-4 z-40">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-end space-x-3">
+                <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
+                
+                <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
+                    <i class="fas fa-paper-plane text-sm md:text-base"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <section id="features" class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
@@ -396,7 +399,7 @@
                     </button>                    
                     <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
                         <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
-                            我們致力於保護您的隱私，對話全程加密。我們會將對話內容進行處理，移除所有個人身份資訊，讓AI能記憶您的習慣，使對話更順暢。這些**匿名的**資料僅用於改善聊聊小幫手的服務，請安心使用。                        
+                            我們致力於保護您的隱私，對話全程加密。我們會將對話內容進行處理，移除所有個人身份資訊，讓AI能記憶您的習慣，使對話更順暢。這些匿名的資料僅用於改善聊聊小幫手的服務，請安心使用。                        
                         </div>                    
                     </div>                
                 </div>
