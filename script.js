@@ -34,7 +34,7 @@ function signOutUser() {
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // 登入成功 (保持不變)
+            // 登入成功 (保持兩段式歡迎，無粗體)
             authButton.innerText = `登出 (${user.displayName.split(' ')[0]})`; 
             authButton.onclick = signOutUser;
             userInput.placeholder = "輸入您的情境...";
@@ -45,10 +45,10 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
                 chatArea.innerHTML = ''; 
                 const userName = user.displayName.split(' ')[0];
                 
-                // 第一段：溫暖歡迎與安撫情緒 (已移除粗體)
+                // 第一段：溫暖歡迎與安撫情緒 (無粗體)
                 displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`, 'system');
                 
-                // 第二段：給予空間與柔性引導（1.5秒後發送）
+                // 第二段：給予空間與柔性引導（1.5秒後發送）(無粗體)
                 setTimeout(() => {
                     displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system');
                 }, 1500); 
@@ -73,7 +73,7 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             
             chatArea.innerHTML = '';
             
-            // 徹底清除所有 * 符號，並將所有未登入提示合為一段，確保顯示正確
+            // 徹底清除所有 * 符號，並將所有未登入提示合為一段
             const welcomeText = `你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個完全私密且只屬於您的空間。
 
 為了確保您的心事不會被別人看到，需要您點擊首頁畫面上的「使用 Gmail 登入」按鈕。我們在這裡等您，隨時準備傾聽您的心事。`;
@@ -127,7 +127,8 @@ function displayMessage(content, type) {
         messageContainer.appendChild(messageBubble);
     }
     
-    messageBubble.innerHTML = content.trim().replace(/\n/g, '<br>');
+    // 這裡我們使用 innerHTML，並確保內容發送時已清除所有 *
+    messageBubble.innerHTML = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>');
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
 }
@@ -156,9 +157,9 @@ async function sendMessage() {
 
     const currentHistory = conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n');
     
-    // 核心 AI 提示語 (Prompt) - 最終修正版：確保 AI 回覆也不用粗體
+    // 核心 AI 提示語 (Prompt) - 確保 AI 回覆也不用粗體
     let promptInstruction = `
-    你現在是**聊聊小幫手**家庭溝通引導者。你的職責是**永遠將安撫情緒和給予同理心放在第一位**。請保持溫和、有溫度、不帶任何壓迫感的語氣。
+    你現在是**Re:Family**家庭溝通引導者。你的職責是**永遠將安撫情緒和給予同理心放在第一位**。請保持溫和、有溫度、不帶任何壓迫感的語氣。
     
     **重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。**
     
