@@ -546,7 +546,16 @@
         const chatContainer = document.querySelector('#chatArea'); 
         if (chatContainer) {            
             chatContainer.scrollTop = chatContainer.scrollHeight;        
-        }    
+        }
+        
+        // 輕度原始碼保護 (阻止右鍵和 F12)
+        document.addEventListener('contextmenu', event => event.preventDefault()); 
+        document.onkeydown = function(e) {
+            // 阻止 F12 (123) 和 Ctrl+U (85)
+            if (e.keyCode === 123 || (e.ctrlKey && e.keyCode === 85)) {
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
