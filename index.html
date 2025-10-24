@@ -32,6 +32,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script> 
+    
     <script>
         // ⚠️ 請替換成您從 Firebase 複製的實際配置！
         const firebaseConfig = {
@@ -43,46 +45,30 @@
             appId: "1:172272099421:web:a67b69291419194189edb4"
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
+        // 初始化 Firebase App
+        const app = firebase.initializeApp(firebaseConfig);
+        // 🌟 初始化 Firestore 實例 (讓 script.js 可以調用) 🌟
+        const db = firebase.firestore(); 
     </script>
-    <script src="https://felo.ai/js/iframe.js?v=1760807775618"></script> 
     <style>
-        * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
-        *::-webkit-scrollbar { width: 6px !important;}
-        *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
-        *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
-        
-        /* 聊天區塊和輸入框的佈局修正樣式 */
-        .chat-container-card {
-            height: 500px; /* 固定卡片高度 */
-            position: relative; /* 讓輸入框可以絕對定位 */
-            overflow: hidden;
-        }
+        .chat-container-card { height: 500px; position: relative; overflow: hidden; }
         .chat-messages-area {
-            position: absolute;
-            top: 64px; /* 標題高度 */
-            left: 0;
-            right: 0;
-            bottom: 80px; /* 輸入框高度 */
+            position: absolute; top: 64px; left: 0; right: 0; 
+            bottom: 80px; /* 為輸入框留出空間 */
             overflow-y: auto;
             padding: 24px;
         }
         .chat-input-fixed {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 40;
+            position: absolute; bottom: 0; left: 0; right: 0; 
+            z-index: 40; 
             padding: 16px;
         }
-    </style>
-    <style data-id="immersive-translate-input-injected-css">
-        .immersive-translate-input {  position: absolute;  top: 0;  right: 0;  left: 0;  bottom: 0;  z-index: 2147483647;  display: flex;  justify-content: center;  align-items: center;}
-        .immersive-translate-modal input[type="radio"] {  margin: 0 6px;  cursor: pointer;}
+        * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
+        *::-webkit-scrollbar { width: 6px !important;}
+        *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
+        *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
         .imt-linear-black-btn {  border-radius: 50px;  background: linear-gradient(66deg, #222 19%, #696969 94.25%);  height: 48px;  width: 100%;  color: #fff;  font-size: 16px;  font-weight: 700;  display: flex;  align-items: center;  cursor: pointer;  justify-content: center;}
     </style>
-    <style id="felo-iframe-styles">html,body{margin:0 !important;padding:0 !important;}</style>
 </head>
 <body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" style="cursor: default;">
     
@@ -155,16 +141,16 @@
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16">                
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
-                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗</span>                
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span>                
                 </h2>                
                 <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
-                    就像與溫暖的朋友對話一樣，專業、簡潔、充滿理解                
+                    像狼人殺法官一樣，Re:Family 智能助手在旁協調，促進家庭成員間的即時溝通。
                 </p>            
             </div>
             
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl chat-container-card" id="chat-widget-container">
-                    <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4">
+                    <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                                 <i class="fas fa-heart text-white"></i>
@@ -232,7 +218,7 @@
                         <p class="text-gray-600 dark:text-gray-400">引導您學會穩定情緒、專注聆聽、理解對方並清晰表達，讓對話更有效。</p>                
                     </div>
                     
-                    <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:-shadow-xl transition-all duration-300 hover:-translate-y-2">                    
                         <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
                             <i class="fas fa-clock text-2xl text-white"></i>                    
                         </div>                    
@@ -567,7 +553,7 @@
         });
         
         // Auto-scroll chat messages 
-        const chatContainer = document.querySelector('.chat-messages-area'); // 注意這裡使用 class selector
+        const chatContainer = document.querySelector('.chat-messages-area'); 
         if (chatContainer) {            
             chatContainer.scrollTop = chatContainer.scrollHeight;        
         }
