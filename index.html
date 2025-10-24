@@ -37,7 +37,7 @@
     <script>
         // ⚠️ 請替換成您從 Firebase 複製的實際配置！
         const firebaseConfig = {
-            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", // 替換為您自己的值
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", 
             authDomain: "familychatadvisor.firebaseapp.com",
             projectId: "familychatadvisor",
             storageBucket: "familychatadvisor.appspot.com",
@@ -46,7 +46,21 @@
         };
 
         const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); // 讓 script.js 可以訪問
+        const db = firebase.firestore(); 
+
+        // 🌟 關鍵修正：在 DOM 內容載入後立即檢查登入狀態，覆蓋初始文本 🌟
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButton = document.getElementById('authButton');
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    // 如果未登入，立即顯示登入提示，解除卡頓
+                    if (authButton) {
+                        authButton.innerText = "使用 Gmail 登入";
+                    }
+                }
+                // 如果已登入，script.js 會處理後續名稱替換
+            });
+        });
     </script>
     <style>
         .chat-container-card { height: 500px; position: relative; overflow: hidden; }
