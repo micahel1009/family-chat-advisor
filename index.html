@@ -45,10 +45,8 @@
             appId: "1:172272099421:web:a67b69291419194189edb4"
         };
 
-        // 初始化 Firebase App
         const app = firebase.initializeApp(firebaseConfig);
-        // 🌟 初始化 Firestore 實例 (讓 script.js 可以調用) 🌟
-        const db = firebase.firestore(); 
+        const db = firebase.firestore(); // 讓 script.js 可以訪問
     </script>
     <style>
         .chat-container-card { height: 500px; position: relative; overflow: hidden; }
@@ -67,7 +65,6 @@
         *::-webkit-scrollbar { width: 6px !important;}
         *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
         *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
-        .imt-linear-black-btn {  border-radius: 50px;  background: linear-gradient(66deg, #222 19%, #696969 94.25%);  height: 48px;  width: 100%;  color: #fff;  font-size: 16px;  font-weight: 700;  display: flex;  align-items: center;  cursor: pointer;  justify-content: center;}
     </style>
 </head>
 <body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" style="cursor: default;">
@@ -144,7 +141,7 @@
                     <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span>                
                 </h2>                
                 <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
-                    像狼人殺法官一樣，Re:Family 智能助手在旁協調，促進家庭成員間的即時溝通。
+                    Re:Family 智能助手在旁協調，促進家庭成員間的即時溝通。
                 </p>            
             </div>
             
@@ -171,12 +168,14 @@
                     </div>
                     
                     <div class="chat-input-fixed bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-t">
-                        <div class="flex items-end space-x-3">
-                            <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
-                            
-                            <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
-                                <i class="fas fa-paper-plane text-sm md:text-base"></i>
-                            </button>
+                        <div class="max-w-4xl mx-auto"> 
+                            <div class="flex items-end space-x-3">
+                                <input type="text" id="userInput" placeholder="分享您的想法..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
+                                
+                                <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
+                                    <i class="fas fa-paper-plane text-sm md:text-base"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -459,11 +458,10 @@
     <script src="script.js"></script>
     
     <script>        
-        // Theme toggle functionality        
+        // Theme toggle functionality (略)
         const themeToggle = document.getElementById('theme-toggle');        
         const html = document.documentElement;
         
-        // Check for saved theme preference or default to system preference        
         const savedTheme = localStorage.getItem('theme');        
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';        
         const initialTheme = savedTheme || systemTheme;
@@ -476,7 +474,7 @@
             localStorage.setItem('theme', isDark ? 'light' : 'dark');        
         });
         
-        // Smooth scrolling for navigation links        
+        // Smooth scrolling for navigation links (略)
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {            
             anchor.addEventListener('click', function (e) {                
                 e.preventDefault();                
@@ -490,7 +488,7 @@
             });        
         });
         
-        // 可折疊區塊功能 (用於主要的功能/技巧區塊)
+        // 可折疊區塊功能 (略)
         function toggleContent(button, contentId) {
             const content = document.getElementById(contentId);
             const icon = button.querySelector('i');
@@ -505,13 +503,12 @@
             }
         }
 
-        // FAQ toggle functionality (用於 FAQ 區塊)
+        // FAQ toggle functionality (略)
         function toggleFAQ(button) {            
             const content = button.nextElementSibling;            
             const icon = button.querySelector('i');            
             const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
             
-            // Close all other FAQs            
             document.querySelectorAll('.faq-content').forEach(faq => {                
                 if (faq !== content) {                    
                     faq.style.maxHeight = '0px';                    
@@ -519,7 +516,6 @@
                 }
             });
             
-            // Toggle current FAQ            
             if (isOpen) {                
                 content.style.maxHeight = '0px';                
                 icon.style.transform = 'rotate(0deg)';            
@@ -529,12 +525,8 @@
             }        
         }
         
-        // Intersection Observer for animations (保持原樣)
-        const observerOptions = {            
-            threshold: 0.1,            
-            rootMargin: '0px 0px -50px 0px'        
-        };
-        
+        // Intersection Observer for animations (略)
+        const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px'};
         const observer = new IntersectionObserver((entries) => {            
             entries.forEach(entry => {                
                 if (entry.isIntersecting) {                    
@@ -544,7 +536,6 @@
             });        
         }, observerOptions);
         
-        // Observe all sections (保持原樣)
         document.querySelectorAll('section').forEach(section => {            
             section.style.opacity = '0';            
             section.style.transform = 'translateY(20px)';            
@@ -561,7 +552,6 @@
         // 輕度原始碼保護 (阻止右鍵和 F12)
         document.addEventListener('contextmenu', event => event.preventDefault()); 
         document.onkeydown = function(e) {
-            // 阻止 F12 (123) 和 Ctrl+U (85)
             if (e.keyCode === 123 || (e.ctrlKey && e.keyCode === 85)) {
                 return false;
             }
