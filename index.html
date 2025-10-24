@@ -37,7 +37,7 @@
     <script>
         // ⚠️ 請替換成您從 Firebase 複製的實際配置！
         const firebaseConfig = {
-            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", 
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", // 替換為您自己的值
             authDomain: "familychatadvisor.firebaseapp.com",
             projectId: "familychatadvisor",
             storageBucket: "familychatadvisor.appspot.com",
@@ -45,22 +45,12 @@
             appId: "1:172272099421:web:a67b69291419194189edb4"
         };
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); 
-
-        // 🌟 關鍵修正：在 DOM 內容載入後立即檢查登入狀態，覆蓋初始文本 🌟
-        document.addEventListener('DOMContentLoaded', function() {
-            const authButton = document.getElementById('authButton');
-            firebase.auth().onAuthStateChanged(user => {
-                if (!user) {
-                    // 如果未登入，立即顯示登入提示，解除卡頓
-                    if (authButton) {
-                        authButton.innerText = "使用 Gmail 登入";
-                    }
-                }
-                // 如果已登入，script.js 會處理後續名稱替換
-            });
-        });
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore(); 
+        } catch (e) {
+            console.error("Firebase 初始化失敗，請檢查配置金鑰和授權網域。", e);
+        }
     </script>
     <style>
         .chat-container-card { height: 500px; position: relative; overflow: hidden; }
@@ -390,7 +380,7 @@
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
                     <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">常見問題</span>                
                 </h2>                
-                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                <p class="text-xl text-gray-600 dark:text-gray-400">                    
                     為您解答關於Re:Family平台的疑問                
                 </p>            
             </div>
@@ -561,14 +551,6 @@
         if (chatContainer) {            
             chatContainer.scrollTop = chatContainer.scrollHeight;        
         }
-        
-        // 輕度原始碼保護 (略)
-        document.addEventListener('contextmenu', event => event.preventDefault()); 
-        document.onkeydown = function(e) {
-            if (e.keyCode === 123 || (e.ctrlKey && e.keyCode === 85)) {
-                return false;
-            }
-        };
     </script>
 </body>
 </html>
