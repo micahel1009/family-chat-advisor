@@ -8,17 +8,17 @@ const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const authButton = document.getElementById('authButton');
 
-// 獲取 Firestore 實例 (依賴 index.html 中的初始化)
+// 獲取 Firebase 實例
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
 const CHAT_COLLECTION = 'family_chat_room'; 
 
-// 全域變數：用於追蹤對話歷史和計數器
+// 全域變數
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastMessageTime = 0; 
 
 
-// --- 2. AUTHENTICATION FUNCTIONS (已修正點擊觸發) ---
+// --- 2. AUTHENTICATION FUNCTIONS ---
 
 function signInWithGoogle() {
     if (!firebase || !firebase.auth) {
@@ -26,11 +26,12 @@ function signInWithGoogle() {
          return;
     }
     const provider = new firebase.auth.GoogleAuthProvider();
-    // ⭐️ 核心修正點：使用 signInWithRedirect 確保在某些環境下能成功登入 ⭐️
+    
+    // ⭐️ 關鍵修正：使用 signInWithRedirect 確保在各平台都能跳轉登入 ⭐️
     firebase.auth().signInWithRedirect(provider)
         .catch((error) => {
             console.error("Google 登入錯誤:", error.message);
-            // alert("登入失敗: " + error.message); // 登入失敗通常會彈出視窗，這裡暫時註釋掉
+            alert("登入失敗: " + error.message);
         });
 }
 
@@ -41,20 +42,20 @@ function signOutUser() {
 // 監聽登入狀態的變化
 if (typeof firebase !== 'undefined' && firebase.auth) {
     
-    // ⭐️ 解決 Chrome 登入後卡住問題：檢查是否有重定向結果 ⭐️
+    // ⭐️ 核心：檢查登入重定向的結果 ⭐️
     firebase.auth().getRedirectResult().then((result) => {
         if (result.credential) {
-             // 登入成功，不需要額外處理，onAuthStateChanged 會接管
+             // 登入成功，onAuthStateChanged 會接管
         }
     }).catch((error) => {
          console.error("Redirect Error:", error.message);
-         // 登入錯誤，仍然回到未登入狀態
+         // 登入失敗，仍會進入未登入狀態
     });
 
 
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            // 登入成功：啟動聊天室
+            // 登入成功
             if(db) startChatListener(user.uid);
             
             // 登入後 UI 狀態修正
@@ -65,13 +66,18 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             sendButton.disabled = false;
             userInput.disabled = false;
             
-            // 登入成功，顯示歡迎語
-            chatArea.innerHTML = ''; // 清空可能殘留的提示
-            const welcomeText = `歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`;
-            displayMessage(welcomeText.replace(/\*/g, ''), 'system', 'Re:Family 智能助手');
-            setTimeout(() => {
-                displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system', 'Re:Family 智能助手');
-            }, 1500); 
+            // 登入成功，顯示歡迎語 (只在聊天室為空時顯示)
+            if (chatArea.children.length === 0 || chatArea.children.length === 1 && chatArea.children[0].id === 'loadingIndicator') {
+                chatArea.innerHTML = ''; 
+                
+                // 第一段：溫暖歡迎與安撫情緒 (無粗體)
+                displayMessage(`歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`, 'system', 'Re:Family 智能助手');
+                
+                // 第二段：給予空間與柔性引導（1.5秒後發送）(無粗體)
+                setTimeout(() => {
+                    displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system', 'Re:Family 智能助手');
+                }, 1500); 
+            }
 
         } else {
             // 未登入 (禁用功能並顯示提示)
@@ -79,8 +85,9 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             authButton.onclick = signInWithGoogle;
             userInput.placeholder = "請先登入才能開始對話。";
             sendButton.disabled = true;
-            userInput.disabled = true;
+            userInput.disabled = true; 
             
+            // 顯示未登入提示 (在登入事件中處理，這裡只確保 UI 正確)
             chatArea.innerHTML = '';
             const unauthText = `你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個完全私密且只屬於您的空間。
 
@@ -93,12 +100,10 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 
 // --- 3. CHAT FUNCTIONS ---
 
-// 顯示訊息到聊天室 (與 index.html 樣式匹配)
 function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
-    // 清理所有 * 符號
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
@@ -110,7 +115,6 @@ function displayMessage(content, type, senderName, timestamp) {
     }
 
     if (type === 'user') {
-        // 使用者訊息 (靠右)
         messageContainer.classList.add('justify-end');
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-warm-orange', 'to-warm-peach', 
@@ -126,7 +130,6 @@ function displayMessage(content, type, senderName, timestamp) {
         messageContainer.appendChild(userIcon);
         
     } else {
-        // 系統/AI 訊息 (靠左)
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-orange-50', 'to-pink-50', 
             'dark:from-gray-700', 'dark:to-gray-600', 'p-4', 
@@ -137,7 +140,6 @@ function displayMessage(content, type, senderName, timestamp) {
         aiIcon.classList.add('w-8', 'h-8', 'bg-gradient-to-br', 'from-warm-orange', 'to-warm-peach', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         aiIcon.innerHTML = '<i class="fas fa-heart text-white text-xs"></i>';
         
-        // AI 或其他用戶訊息，前面加上名字/標頭
         if (senderName === 'Re:Family 智能助手') {
              messageBubble.innerHTML = `<strong>Re:Family 智能助手</strong><br>` + cleanedContent;
         } else {
@@ -186,7 +188,6 @@ function startChatListener(userId) {
 async function sendToDatabase(text, senderId, senderName) {
     if (!db || text.trim() === '') return;
 
-    // 清空聊天室，如果顯示的是登入提示
     if (chatArea.children.length > 0 && chatArea.children[0].textContent.includes("你好！在我們開始聊心事之前")) {
          chatArea.innerHTML = '';
     }
@@ -236,7 +237,7 @@ async function triggerAIPrompt(lastUserText) {
     
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
     
-    當前使用者實際輸入次數: ${conversationCount}.
+    當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
     ---
     ${conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n')}
@@ -276,19 +277,16 @@ async function triggerAIPrompt(lastUserText) {
              aiResponse = `API 錯誤：${data.error.message}`;
         }
         
-        // 寫入資料庫，讓所有人看到 AI 回覆
         const responseParts = aiResponse.split('|||').map(part => part.trim()).filter(part => part.length > 0);
         for (const part of responseParts) {
              await sendToDatabase(part, 'AI', 'Re:Family 智能助手');
-             await new Promise(resolve => setTimeout(resolve, 1000)); // 模擬打字間隔
+             await new Promise(resolve => setTimeout(resolve, 1000)); 
         }
 
     } catch (error) {
         console.error("Gemini API Error:", error);
     } finally {
-        sendButton.disabled = false;
-        userInput.disabled = false;
-        userInput.focus();
+        // 按鈕釋放在 sendToDatabase 完成後，讓 Firestore 監聽器來處理
     }
 }
 
@@ -316,7 +314,7 @@ window.onload = function() {
                 userInput.disabled = false;
                 
                 // 登入成功，顯示歡迎語
-                chatArea.innerHTML = ''; // 清空聊天室
+                chatArea.innerHTML = '';
                  const welcomeText = `歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`;
                  displayMessage(welcomeText.replace(/\*/g, ''), 'system', 'Re:Family 智能助手');
                  setTimeout(() => {
