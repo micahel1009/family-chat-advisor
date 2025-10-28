@@ -1,5 +1,4 @@
 // 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
-// 此模式下金鑰會暴露，請使用臨時金鑰
 const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
 const chatArea = document.getElementById('chatArea');
@@ -15,9 +14,8 @@ const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 
 
-// 獲取 Firestore 實例
+// 獲取 Firestore 實例 (依賴 index.html 中的初始化)
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
-const CHAT_COLLECTION = 'family_chat_room'; 
 
 // --- 身份識別與房間狀態 (儲存在瀏覽器本地) ---
 let currentUserName = localStorage.getItem('chatUserName') || null; 
@@ -36,8 +34,7 @@ let lastAIMessageTime = 0;
 // --- 1. DISPLAY MESSAGE & UI LOGIC ---
 
 function updateUIForChat() {
-    // 隱藏房間入口，顯示聊天室
-    roomEntryScreen.style.display = 'none';
+    roomEntryScreen.style.display = 'none'; // 隱藏房間入口
     userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
     userInput.disabled = false;
     sendButton.disabled = false;
@@ -49,26 +46,23 @@ function updateUIForChat() {
     chatArea.innerHTML = '';
     
     // 溫和歡迎語 (分段發送)
-    displayMessage(`大家好！我是 Re:Family 智能助手。很高興能成為你們的溝通協調員。`, 'system', 'Re:Family 智能助手');
+    displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室 [${currentRoomId}]。`, 'system', 'Re:Family 智能助手');
     setTimeout(() => {
-        displayMessage(`這裡是一個安全且中立的空間。當你們準備好時，請自然地分享你們遇到的情境或心情。`, 'system', 'Re:Family 智能助手');
+        displayMessage(`我會在這裡傾聽並協調您和家人的溝通。請先深呼吸，當您準備好時，隨時都可以告訴我發生了什麼事。`, 'system', 'Re:Family 智能助手');
     }, 1500); 
 }
 
-/**
- * 核心顯示函式，修正暱稱顯示與對齊問題
- */
 function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
+    // 清理所有 * 符號
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     
     let senderDisplayHtml = '';
-
-    // 判斷發言者類型
+    
     if (type === 'user') { // 當前用戶
         messageContainer.classList.add('justify-end');
         messageBubble.classList.add(
@@ -79,10 +73,18 @@ function displayMessage(content, type, senderName, timestamp) {
         userIcon.classList.add('w-8', 'h-8', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         userIcon.innerHTML = '<i class="fas fa-user text-gray-600 dark:text-gray-300 text-xs"></i>';
         
-        // 修正：在氣泡上方顯示名字 (用戶自己的訊息)
-        senderDisplayHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong></div>`;
+        // 修正：匿名模式下，用戶自己的發言頭部顯示名字
+        senderName = senderName || currentUserName || '您';
+        const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const headerHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         
-        messageContainer.appendChild(messageBubble);
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('flex', 'flex-col', 'items-end');
+        wrapper.innerHTML = headerHtml;
+        messageBubble.innerHTML = cleanedContent;
+        wrapper.appendChild(messageBubble);
+
+        messageContainer.appendChild(wrapper);
         messageContainer.appendChild(userIcon);
         
     } else { // AI 或其他使用者 (靠左)
@@ -95,35 +97,22 @@ function displayMessage(content, type, senderName, timestamp) {
         const aiIcon = document.createElement('div');
         aiIcon.classList.add('w-8', 'h-8', 'bg-gradient-to-br', 'from-warm-orange', 'to-warm-peach', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         
-        // 修正：AI 和其他用戶的暱稱顯示在氣泡上方
+        const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        
         if (senderName === 'Re:Family 智能助手') {
              aiIcon.innerHTML = `<i class="fas fa-heart text-white text-xs"></i>`;
+             senderDisplayHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>Re:Family 智能助手</strong> <span class="font-normal">${timeStr}</span></div>`;
         } else {
              aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`; // 其他匿名使用者
+             senderDisplayHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         }
         
-        senderDisplayHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong></div>`;
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('flex', 'flex-col', 'items-start');
+        wrapper.innerHTML = senderDisplayHtml;
+        messageBubble.innerHTML = cleanedContent;
+        wrapper.appendChild(messageBubble);
 
-        messageContainer.appendChild(aiIcon);
-        messageContainer.appendChild(messageBubble);
-    }
-
-    // 創建一個 wrapper 來容納名字和氣泡
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('flex', 'flex-col', type === 'user' ? 'items-end' : 'items-start');
-    wrapper.innerHTML = senderDisplayHtml;
-    messageBubble.innerHTML = cleanedContent;
-    
-    // 將氣泡插入到 wrapper
-    wrapper.appendChild(messageBubble);
-    
-    // 重新構造 messageContainer
-    if (type === 'user') {
-        messageContainer.innerHTML = '';
-        messageContainer.appendChild(wrapper);
-        messageContainer.appendChild(userIcon);
-    } else {
-        messageContainer.innerHTML = '';
         messageContainer.appendChild(aiIcon);
         messageContainer.appendChild(wrapper);
     }
@@ -140,6 +129,13 @@ let displayedMessageIds = new Set();
 function startChatListener(roomId) {
     if (!db) return;
 
+    // 清空舊的聊天內容，並開始監聽新的 Room ID
+    chatArea.innerHTML = '';
+    displayedMessageIds = new Set();
+    conversationHistory = [];
+    conversationCount = 0;
+
+    // 🌟 核心：監聽特定 Room ID 的集合 🌟
     db.collection(roomId).orderBy('timestamp').limit(50).onSnapshot(snapshot => {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
         
@@ -154,6 +150,7 @@ function startChatListener(roomId) {
                     const isCurrentUser = message.senderId === sessionId;
                     const messageType = message.senderId === 'AI' ? 'system' : (isCurrentUser ? 'user' : 'other');
 
+                    // 渲染到聊天室
                     displayMessage(message.text, messageType, message.senderName, message.timestamp);
 
                     // 🌟 觸發 AI 法官判斷 (只有當前使用者發送時才觸發 AI 邏輯) 🌟
@@ -177,13 +174,14 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
         timestamp: Date.now()
     }).catch(error => {
         console.error("寫入資料庫失敗:", error);
-        displayMessage("🚨 系統錯誤：訊息未能送出。請檢查 Firebase Firestore 設定和連線。", 'system', '系統');
+        alert("🚨 寫入資料庫失敗。請檢查您的網路連線或 Firestore 安全規則！"); // 這裡彈出錯誤提示
+        sendButton.disabled = false;
+        userInput.disabled = false;
     });
 }
 
 
 async function checkAndTriggerAI(lastUserMessage) {
-    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(currentRoomId)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -205,14 +203,12 @@ async function checkAndTriggerAI(lastUserMessage) {
     }
     lastAIMessageTime = currentTime;
 
-
-    // 觸發 AI 判斷
     await triggerAIPrompt(lastUserMessage.text);
 }
 
 
 async function triggerAIPrompt(lastUserText) {
-    // 核心 API 錯誤修正：config -> generationConfig
+
     let promptInstruction = `
     你現在是Re:Family家庭溝通引導者。你的職責是永遠將安撫情緒和給予同理心放在第一位。請保持溫和、有溫度、不帶任何壓迫感的語氣。
     
@@ -272,9 +268,6 @@ async function triggerAIPrompt(lastUserText) {
         console.error("Gemini API Error:", error);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
-        userInput.focus();
-        sendButton.disabled = false;
-        userInput.disabled = false;
     }
 }
 
@@ -290,6 +283,9 @@ window.onload = function() {
          // 顯示 Room Entry Screen
          roomEntryScreen.style.display = 'flex';
          startChatButton.addEventListener('click', handleRoomEntry);
+         // 確保按鈕和輸入框是不可用的
+         userInput.disabled = true;
+         sendButton.disabled = true;
     }
 };
 
@@ -302,15 +298,12 @@ function handleRoomEntry() {
         return;
     }
 
-    // 儲存資訊
+    // 儲存資訊 (隔離關鍵)
     currentRoomId = roomId;
     currentUserName = userName;
     localStorage.setItem('chatRoomId', currentRoomId);
     localStorage.setItem('chatUserName', currentUserName);
-    
-    // 立即清除 roomEntryScreen 的內容，避免影響後續的 chatArea 渲染
-    roomEntryScreen.innerHTML = '';
-    
+
     // 進入聊天室
     startChatListener(currentRoomId);
     updateUIForChat();
