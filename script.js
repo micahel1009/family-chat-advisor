@@ -1,61 +1,61 @@
 // 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
 const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
+// --- 1. DOM 元素獲取 ---
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
-const nicknameDisplay = document.getElementById('current-user-name');
+const authButton = document.getElementById('authButton');
 
-// 獲取 Firestore 實例 (依賴 index.html 中的初始化)
+// 獲取 Firebase 實例
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
 const CHAT_COLLECTION = 'family_chat_room'; // 聊天室的集合名稱
 
-// 全域變數：用於追蹤對話歷史、計數器和身份識別
+// 全域變數
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastMessageTime = 0; 
-let currentUserName = localStorage.getItem('chatUserName') || null; 
-// 使用 localStorage 或 Session ID 作為裝置唯一 ID，取代 Firebase UID
-const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
-localStorage.setItem('sessionId', sessionId);
 
 
-// --- 1. UTILITY FUNCTIONS ---
+// --- 2. AUTHENTICATION FUNCTIONS ---
 
-/**
- * 提示使用者輸入或更新暱稱
- */
-function getUserName() {
-    let name = currentUserName;
-    if (!name) {
-        name = prompt("請輸入您的暱稱，以便在群聊中識別您的身份：(例如：爸爸、媽媽、小明)");
-        
-        if (name && name.trim() !== '') {
-            currentUserName = name.trim();
-            localStorage.setItem('chatUserName', currentUserName);
-        } else {
-            // 如果使用者取消或輸入空白，使用預設暱稱
-            currentUserName = "匿名使用者"; 
-            localStorage.setItem('chatUserName', currentUserName);
-        }
+function signInWithGoogle() {
+    if (!firebase || !firebase.auth) {
+         displayMessage("Firebase 認證服務未載入。請檢查 index.html 中的 Firebase SDK 配置。", 'system', '系統');
+         return;
     }
-    nicknameDisplay.textContent = `暱稱：${currentUserName}`;
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // 使用 Redirect 登入 (避免彈出視窗被阻擋)
+    firebase.auth().signInWithRedirect(provider)
+        .catch((error) => {
+            console.error("Google 登入錯誤:", error.message);
+            alert("登入失敗: " + error.message);
+        });
+}
+
+function signOutUser() {
+    firebase.auth().signOut();
 }
 
 
-// --- 2. DISPLAY MESSAGE LOGIC ---
+// --- 3. DISPLAY MESSAGE LOGIC ---
 
-function displayMessage(content, type, senderName) {
+function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
-    // 清理所有 * 符號
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     
-    if (type === 'user') { // 使用者的訊息，靠右對齊
+    let headerHtml = '';
+    if (senderName && type !== 'user') {
+         const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+         headerHtml = `<div class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 flex justify-between items-center"><span>${senderName}</span><span class="font-normal">${timeStr}</span></div>`;
+    }
+
+    if (type === 'user') {
         messageContainer.classList.add('justify-end');
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-warm-orange', 'to-warm-peach', 
@@ -63,13 +63,13 @@ function displayMessage(content, type, senderName) {
         );
         const userIcon = document.createElement('div');
         userIcon.classList.add('w-8', 'h-8', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
-        userIcon.innerHTML = `<i class="fas fa-user text-gray-600 dark:text-gray-300 text-xs"></i>`;
+        userIcon.innerHTML = '<i class="fas fa-user text-gray-600 dark:text-gray-300 text-xs"></i>';
         
-        messageBubble.innerHTML = `<strong>${senderName}</strong><br>` + cleanedContent;
+        messageBubble.innerHTML = cleanedContent;
         messageContainer.appendChild(messageBubble);
         messageContainer.appendChild(userIcon);
         
-    } else { // AI 或其他使用者的訊息，靠左對齊
+    } else {
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-orange-50', 'to-pink-50', 
             'dark:from-gray-700', 'dark:to-gray-600', 'p-4', 
@@ -80,11 +80,10 @@ function displayMessage(content, type, senderName) {
         aiIcon.classList.add('w-8', 'h-8', 'bg-gradient-to-br', 'from-warm-orange', 'to-warm-peach', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         
         if (senderName === 'Re:Family 智能助手') {
-             aiIcon.innerHTML = '<i class="fas fa-heart text-white text-xs"></i>';
-             messageBubble.innerHTML = `<strong>${senderName}</strong><br>` + cleanedContent;
+             aiIcon.innerHTML = `<i class="fas fa-heart text-white text-xs"></i>`;
+             messageBubble.innerHTML = `<strong>Re:Family 智能助手</strong><br>` + cleanedContent;
         } else {
-             aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`; // 其他匿名使用者
-             messageBubble.innerHTML = `<strong>${senderName}</strong><br>` + cleanedContent;
+             aiIcon.innerHTML = headerHtml + cleanedContent;
         }
         
         messageContainer.appendChild(aiIcon);
@@ -96,14 +95,13 @@ function displayMessage(content, type, senderName) {
 }
 
 
-// 記錄已顯示的訊息 ID，避免重複渲染
 let displayedMessageIds = new Set(); 
 
 // 🌟 核心功能：即時監聽 Firestore 資料庫 🌟
-function startChatListener() {
+function startChatListener(userId) {
     if (!db) return;
 
-    db.collection(CHAT_COLLECTION).orderBy('timestamp').limit(50).onSnapshot(snapshot => {
+    db.collection(CHAT_COLLECTION).orderBy('timestamp').onSnapshot(snapshot => {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
         
         snapshot.docChanges().forEach(change => {
@@ -114,14 +112,12 @@ function startChatListener() {
                 if (!displayedMessageIds.has(messageId)) {
                     displayedMessageIds.add(messageId);
                     
-                    const isCurrentUser = message.senderId === sessionId;
-                    const messageType = message.senderId === 'AI' ? 'system' : (isCurrentUser ? 'user' : 'other');
-                    
-                    // 如果是其他使用者或AI的訊息，則顯示
-                    displayMessage(message.text, messageType, message.senderName);
+                    const messageType = message.senderId === 'AI' ? 'system' : (message.senderId === userId ? 'user' : 'other');
+                    const senderDisplayName = message.senderId === 'AI' ? 'Re:Family 智能助手' : message.senderName;
 
-                    // 只有當訊息來自當前裝置以外的用戶時，才觸發 AI 判斷
-                    if (message.senderId !== 'AI' && isCurrentUser) {
+                    displayMessage(message.text, messageType, senderDisplayName, message.timestamp);
+
+                    if (message.senderId !== 'AI') {
                         checkAndTriggerAI(message);
                     }
                 }
@@ -134,37 +130,25 @@ function startChatListener() {
 // 🌟 核心功能：發送訊息到資料庫 🌟
 async function sendToDatabase(text, senderId, senderName) {
     if (!db || text.trim() === '') return;
-    
-    // 如果是第一次發言，清除歡迎訊息
-    if (chatArea.children.length > 0 && chatArea.children[0].textContent.includes("這裡絕對安全")) {
+
+    if (chatArea.children.length > 0 && chatArea.children[0].textContent.includes("你好！在我們開始聊心事之前")) {
          chatArea.innerHTML = '';
     }
 
-    // 禁用輸入，等待發送完成
-    sendButton.disabled = true;
-    userInput.disabled = true;
-    
     await db.collection(CHAT_COLLECTION).add({
         text: text,
         senderId: senderId,
         senderName: senderName,
         timestamp: Date.now()
-    }).then(() => {
-        // 發送成功後，重新啟用輸入
-        sendButton.disabled = false;
-        userInput.disabled = false;
     }).catch(error => {
         console.error("寫入資料庫失敗:", error);
-        displayMessage("🚨 系統錯誤：訊息未能送出。請檢查 Firebase Firestore 設定和連線。", 'system', '系統');
-        sendButton.disabled = false;
-        userInput.disabled = false;
+        displayMessage("🚨 系統錯誤：訊息未能送出。請檢查 Firebase Firestore 設定。", 'system', '系統');
     });
 }
 
 
 // 🌟 核心功能：AI 法官邏輯判斷 🌟
 async function checkAndTriggerAI(lastUserMessage) {
-    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(CHAT_COLLECTION)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -177,11 +161,9 @@ async function checkAndTriggerAI(lastUserMessage) {
         conversationHistory.push({ role: role, text: data.text });
     });
     
-    // 計算使用者實際輸入次數 (不含 AI)
     let userMessageCount = conversationHistory.filter(m => m.role === 'user').length;
     conversationCount = userMessageCount;
     
-    // 限制 AI 回覆頻率 (5 秒內不重複回覆)
     const currentTime = Date.now();
     if (currentTime - lastMessageTime < 5000) {
         return; 
@@ -221,8 +203,6 @@ async function triggerAIPrompt(lastUserText) {
     `;
 
     try {
-        if (loadingIndicator) loadingIndicator.classList.remove('hidden');
-
         const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -250,45 +230,103 @@ async function triggerAIPrompt(lastUserText) {
     } catch (error) {
         console.error("Gemini API Error:", error);
     } finally {
-        if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        sendButton.disabled = false;
+        userInput.disabled = false;
         userInput.focus();
     }
 }
 
 
-// --- 事件監聽與啟動 ---
+// --- 4. 事件監聽與啟動 ---
 
 window.onload = function() {
-    getUserName(); // 網頁載入時提示使用者輸入暱稱
-    startChatListener(); // 啟動 Firebase Firestore 監聽
-    
-    // 顯示歡迎語
-    chatArea.innerHTML = '';
-    const welcomeText = `歡迎您，${currentUserName}！請先深呼吸。`;
-    displayMessage(welcomeText, 'system', 'Re:Family 智能助手');
-    setTimeout(() => {
-       displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system', 'Re:Family 智能助手');
-    }, 1500); 
+    // ⭐️ 關鍵修正：確保按鈕點擊事件在 DOM 載入後立即生效 ⭐️
+    const authButton = document.getElementById('authButton');
+    authButton.onclick = signInWithGoogle; 
+
+    // 檢查重定向結果 (解決登入跳轉後卡住問題)
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().getRedirectResult().then((result) => {
+            if (result.credential) {
+                // 登入成功，onAuthStateChanged 會接管
+            }
+        }).catch((error) => {
+             console.error("Redirect Error:", error.message);
+        });
+
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // 登入成功：啟動聊天室
+                if(db) startChatListener(user.uid);
+                
+                // 登入後 UI 狀態修正
+                const userName = user.displayName.split(' ')[0];
+                authButton.innerText = `登出 (${userName})`;
+                authButton.onclick = signOutUser;
+                userInput.placeholder = "輸入您的情境...";
+                sendButton.disabled = false;
+                userInput.disabled = false;
+                
+                // 登入成功，顯示歡迎語
+                chatArea.innerHTML = '';
+                 const welcomeText = `歡迎回來，${userName}！我感受得到您心裡承載著一些重量，請先深呼吸。`;
+                 displayMessage(welcomeText.replace(/\*/g, ''), 'system', 'Re:Family 智能助手');
+                 setTimeout(() => {
+                    displayMessage(`這裡絕對安全。當您準備好時，隨時都可以告訴我：是什麼事情讓您感到不舒服，或是最近發生了什麼？`, 'system', 'Re:Family 智能助手');
+                 }, 1500); 
+
+            } else {
+                // 未登入 (禁用功能並顯示提示)
+                authButton.innerText = "使用 Gmail 登入";
+                authButton.onclick = signInWithGoogle;
+                userInput.placeholder = "請先登入才能開始對話。";
+                sendButton.disabled = true;
+                userInput.disabled = true;
+                
+                chatArea.innerHTML = '';
+                const unauthText = `你好！在我們開始聊心事之前，我想先給您一個承諾：這裡是一個完全私密且只屬於您的空間。
+
+為了確保您的心事不會被別人看到，需要您點擊首頁畫面上的「使用 Gmail 登入」按鈕。我們在這裡等您，隨時準備傾聽您的心事。`;
+                 displayMessage(unauthText.replace(/\*/g, ''), 'system', 'Re:Family 智能助手');
+            }
+        });
+    } else {
+        // 如果 Firebase SDK 載入失敗的最終保障
+        chatArea.innerHTML = '';
+        displayMessage("🚨 錯誤：Firebase 服務無法載入。請檢查您的網路或 index.html 配置。", 'system', '系統');
+    }
 };
 
 
-// 點擊發送按鈕事件
+// 恢復點擊與 Enter 鍵事件監聽
 sendButton.addEventListener('click', () => {
-    const userText = userInput.value.trim();
-    if (userText) {
-        sendToDatabase(userText, sessionId, currentUserName);
-        userInput.value = '';
+    if (firebase.auth().currentUser) {
+        const userText = userInput.value.trim();
+        if (userText) {
+            sendToDatabase(userText, firebase.auth().currentUser.uid, firebase.auth().currentUser.displayName);
+            userInput.value = '';
+            sendButton.disabled = true;
+            userInput.disabled = true;
+        }
+    } else {
+         displayMessage("請先登入才能發言。", 'system', '系統');
     }
 });
 
-// 按下 Enter 鍵發送事件
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { 
         e.preventDefault(); 
-        const userText = userInput.value.trim();
-        if (userText) {
-            sendToDatabase(userText, sessionId, currentUserName);
-            userInput.value = '';
+        if (firebase.auth().currentUser) {
+            const userText = userInput.value.trim();
+            if (userText) {
+                sendToDatabase(userText, firebase.auth().currentUser.uid, firebase.auth().currentUser.displayName);
+                userInput.value = '';
+                sendButton.disabled = true;
+                userInput.disabled = true;
+            }
+        } else {
+            displayMessage("請先登入才能發言。", 'system', '系統');
         }
     }
 });
