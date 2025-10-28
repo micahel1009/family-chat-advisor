@@ -101,14 +101,16 @@
                     <a href="#communication" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">溝通技巧</a>                                        
                 </div>
                 
-                <div id="statusDisplay" class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
-                    <span id="current-user-status">未加入</span> 
+                <div class="flex items-center space-x-3">
+                    <span id="current-user-status" class="text-sm">未加入</span> 
+                    <button id="leaveRoomButton" class="px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors hidden">
+                        切換房間
+                    </button>
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
+                        <i class="fas fa-sun dark:hidden"></i>                    
+                        <i class="fas fa-moon hidden dark:inline"></i>                
+                    </button>
                 </div>
-
-                <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
-                    <i class="fas fa-sun dark:hidden"></i>                    
-                    <i class="fas fa-moon hidden dark:inline"></i>                
-                </button>            
             </div>        
         </div>    
     </nav>
@@ -405,76 +407,6 @@
         </div>    
     </section>
 
-    <section class="py-20 bg-white/50 dark:bg-gray-800/50" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
-        <div class="max-w-4xl mx-auto px-6 lg:px-8">            
-            <div class="text-center mb-16">                
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
-                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">常見問題</span>                
-                </h2>                
-                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
-                    為您解答關於Re:Family平台的疑問                
-                </p>            
-            </div>
-            
-            <div class="space-y-6">                
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
-                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
-                        <div class="flex items-center justify-between">                            
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Re:Family 可以取代專業的幫助嗎？</h3>                            
-                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
-                        </div>                    
-                    </button>                    
-                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
-                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
-                            Re:Family 不是要取代專業人士的協助，而是您的日常陪伴朋友。我們用溫暖傾聽和對話，陪您整理心情、緩解壓力，但如果遇到需要專業協助的情況，我們建議尋求心理師或社工師的支持。我們就像隨時在線的好朋友，隨手聊聊，讓你感到不孤單！                        
-                        </div>                    
-                    </div>                
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
-                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
-                        <div class="flex items-center justify-between">                            
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">我的對話紀錄會被其他人看到嗎？</h3>                            
-                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
-                        </div>                    
-                    </button>                    
-                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
-                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
-                            我們致力於保護您的隱私，對話全程加密。我們會將對話內容進行處理，移除所有個人身份資訊，讓AI能記憶您的習慣，使對話更順暢。這些匿名的資料僅用於改善 Re:Family 的服務，請安心使用。                        
-                        </div>                    
-                    </div>                
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">                    
-                    <button class="w-full text-left p-6 focus:outline-none" onclick="toggleFAQ(this)">                        
-                        <div class="flex items-center justify-between">                            
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Re:Family 跟其他 AI 有什麼差異？</h3>                            
-                            <i class="fas fa-chevron-down text-warm-orange transition-transform duration-300"></i>                        
-                        </div>                    
-                    </button>                    
-                    <div class="faq-content max-h-0 overflow-hidden transition-all duration-300">                        
-                        <div class="p-6 pt-0 text-gray-600 dark:text-gray-400">                            
-                            很多 AI 傾向於「直接給答案」，但我們知道您需要的往往不是答案，而是被理解。Re:Family 的核心是透過溫暖的傾聽，引導您自己梳理思緒，幫助您從自己的感受中，找到更深層的需求與更好的應對方式。                        
-                        </div>                    
-                    </div>                
-                </div>            
-            </div>        
-        </div>    
-    </section>
-
-    <section class="py-20 bg-gradient-to-br from-warm-orange via-warm-peach to-gentle-pink relative overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
-        <div class="absolute inset-0 bg-gradient-to-r from-warm-orange/20 to-gentle-pink/20"></div>                
-        <div class="relative max-w-4xl mx-auto px-6 lg:px-8 text-center text-white">            
-            <h2 class="text-4xl lg:text-6xl font-bold mb-6">                
-                開始您的溫暖對話之旅            
-            </h2>            
-            <p class="text-xl lg:text-2xl mb-8 opacity-90">                
-                讓 Re:Family 陪伴您與家人建立更深層的情感連結            
-            </p>                        
-            
-        </div>    
-    </section>
-
     <footer class="bg-gray-900 dark:bg-gray-950 text-white py-12">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
             <div class="flex justify-center"> <div class="space-y-4 text-center"> <div class="flex items-center justify-center space-x-2">                        
@@ -582,14 +514,6 @@
         if (chatContainer) {            
             chatContainer.scrollTop = chatContainer.scrollHeight;        
         }
-        
-        // 輕度原始碼保護 (阻止右鍵和 F12)
-        document.addEventListener('contextmenu', event => event.preventDefault()); 
-        document.onkeydown = function(e) {
-            if (e.keyCode === 123 || (e.ctrlKey && e.keyCode === 85)) {
-                return false;
-            }
-        };
     </script>
 </body>
 </html>
