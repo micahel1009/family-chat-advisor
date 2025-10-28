@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Re:Family - 溫暖家庭溝通平台</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -31,7 +32,6 @@
     </script>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script> 
     
     <script>
@@ -47,7 +47,7 @@
 
         try {
             const app = firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore(); 
+            const db = firebase.firestore(); // 讓 script.js 可以訪問
         } catch (e) {
             console.error("Firebase 初始化失敗，請檢查配置金鑰和授權網域。", e);
         }
@@ -109,8 +109,8 @@
                     </p>                
                 </div>                                
                 
-                <button id="authButton" class="px-6 py-3 text-sm font-medium rounded-lg text-white bg-warm-orange hover:bg-warm-peach transition-colors shadow-lg">
-                    載入登入狀態...
+                <button id="joinRoomButton" class="px-6 py-3 text-sm font-medium rounded-lg text-white bg-warm-orange hover:bg-warm-peach transition-colors shadow-lg">
+                    點此加入家庭調解室
                 </button>
                 
                 <div class="flex items-center space-x-8 text-sm text-gray-500 dark:text-gray-400" style="position: relative; width: 225px; height: 20px; top: 5px; left: -32px;">                    
@@ -169,14 +169,29 @@
                             AI 顧問正在思考中...
                         </div>
                         
+                        <div id="roomEntryPrompt" class="text-center p-8 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                            <h4 class="font-semibold text-lg mb-4 text-gray-800 dark:text-gray-200">
+                                🏠 請輸入房間代碼與您的暱稱：
+                            </h4>
+                            <input type="text" id="roomIdInput" placeholder="家庭房間代碼 (如: FamilyA123)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
+                            <input type="text" id="userNameInput" placeholder="您的暱稱 (如: 爸爸/小美)" class="w-full p-3 mb-4 border rounded-lg focus:ring-warm-orange">
+                            <button id="startChatButton" class="w-full px-4 py-2 bg-calm-blue text-white font-bold rounded-lg hover:bg-serene-green transition-colors">
+                                加入聊天室
+                            </button>
+                            <p class="text-sm mt-3 text-gray-500 dark:text-gray-400">
+                                請確保所有家庭成員使用相同的房間代碼。
+                            </p>
+                        </div>
+
+                        
                     </div>
                     
                     <div class="chat-input-fixed bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-t">
                         <div class="max-w-4xl mx-auto"> 
                             <div class="flex items-end space-x-3">
-                                <input type="text" id="userInput" placeholder="請先登入才能開始對話。" class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base">
+                                <input type="text" id="userInput" placeholder="請先加入房間才能開始對話..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange focus:border-transparent outline-none text-base" disabled>
                                 
-                                <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0">
+                                <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0" disabled>
                                     <i class="fas fa-paper-plane text-sm md:text-base"></i>
                                 </button>
                             </div>
@@ -380,7 +395,7 @@
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
                     <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">常見問題</span>                
                 </h2>                
-                <p class="text-xl text-gray-600 dark:text-gray-400">                    
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
                     為您解答關於Re:Family平台的疑問                
                 </p>            
             </div>
@@ -551,6 +566,14 @@
         if (chatContainer) {            
             chatContainer.scrollTop = chatContainer.scrollHeight;        
         }
+        
+        // 輕度原始碼保護 (阻止右鍵和 F12)
+        document.addEventListener('contextmenu', event => event.preventDefault()); 
+        document.onkeydown = function(e) {
+            if (e.keyCode === 123 || (e.ctrlKey && e.keyCode === 85)) {
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
