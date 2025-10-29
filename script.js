@@ -12,7 +12,7 @@ const roomIdInput = document.getElementById('roomIdInput');
 const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
-const leaveRoomButton = document.getElementById('leaveRoomButton'); 
+const leaveRoomButton = document.getElementById('leaveRoomButton'); // 新增退出按鈕
 
 
 // 獲取 Firestore 實例 (依賴 index.html 中的初始化)
@@ -21,6 +21,7 @@ const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.fire
 // --- 身份識別與房間狀態 (儲存在瀏覽器本地) ---
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
+// 使用 Session ID 作為裝置唯一 ID
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
@@ -183,7 +184,6 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 
 async function checkAndTriggerAI(lastUserMessage) {
-    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(currentRoomId)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -199,20 +199,32 @@ async function checkAndTriggerAI(lastUserMessage) {
     let userMessageCount = conversationHistory.filter(m => m.role === 'user').length;
     conversationCount = userMessageCount;
     
+    // 限制 AI 回覆頻率 (5 秒內不重複觸發 AI)
     const currentTime = Date.now();
     if (currentTime - lastAIMessageTime < 5000) {
         return; // 5 秒內不重複觸發 AI
     }
     lastAIMessageTime = currentTime;
 
-    await triggerAIPrompt(lastUserMessage.text);
+    // 核心 AI 邏輯：檢查關鍵字或次數，決定是否回覆
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "不開心", "討厭", "兇"];
+    const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
+
+    // 如果是負面情緒或剛好是第 3 次發言，則觸發 AI
+    if (shouldRespond || conversationCount === 3) {
+        await triggerAIPrompt(lastUserMessage.text);
+    }
+    // 否則，AI 保持沉默，讓家庭成員溝通
 }
 
 
 async function triggerAIPrompt(lastUserText) {
 
     let promptInstruction = `
-    你現在是Re:Family家庭溝通引導者。你的職責是永遠將安撫情緒和給予同理心放在第一位。請保持溫和、有溫度、不帶任何壓迫感的語氣。
+    你現在是Re:Family家庭溝通引導者。你的職責是：
+    1. **被動協調：** 你的發言必須簡短，不應成為群聊中的主要發言者。
+    2. **情緒安撫優先：** 回覆的開頭永遠是同理心和安撫，**不能過度冗長**（安撫段落限制在 1-2 句話）。
+    3. **目標引導：** 當對話進入僵局或達到關鍵次數時，你需提出解決方案。
     
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
     
@@ -224,9 +236,9 @@ async function triggerAIPrompt(lastUserText) {
     
     請遵循以下流程：
     
-    1. **如果使用者實際輸入次數小於 3 (目前在引導分析階段)：**
+    1. **如果使用者實際輸入次數小於 3 且剛偵測到負面情緒：**
        - 回覆結構必須是：[同理心安撫與肯定感受] ||| [溫和的引導與釐清問題]。
-       - 回覆格式：[安撫與同理段落] ||| [溫和提問，引導下一個細節]
+       - 回覆格式：[安撫與同理段落 (極簡單句)] ||| [柔性提問，將發言權交回群組]
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
        - 你的回覆必須直接跳到解決方案。
@@ -294,7 +306,6 @@ window.onload = function() {
          sendButton.disabled = true;
     }
     
-    // ⭐️ 退出按鈕事件監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
