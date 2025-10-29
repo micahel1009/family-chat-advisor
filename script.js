@@ -12,7 +12,7 @@ const roomIdInput = document.getElementById('roomIdInput');
 const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
-const leaveRoomButton = document.getElementById('leaveRoomButton'); // 新增退出按鈕
+const leaveRoomButton = document.getElementById('leaveRoomButton'); 
 
 
 // 獲取 Firestore 實例 (依賴 index.html 中的初始化)
@@ -184,6 +184,7 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 
 async function checkAndTriggerAI(lastUserMessage) {
+    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(currentRoomId)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -199,35 +200,34 @@ async function checkAndTriggerAI(lastUserMessage) {
     let userMessageCount = conversationHistory.filter(m => m.role === 'user').length;
     conversationCount = userMessageCount;
     
-    // 限制 AI 回覆頻率 (5 秒內不重複觸發 AI)
     const currentTime = Date.now();
+    // 限制 5 秒內不重複觸發 AI (避免連續發言時 AI 過度介入)
     if (currentTime - lastAIMessageTime < 5000) {
-        return; // 5 秒內不重複觸發 AI
+        return; 
     }
     lastAIMessageTime = currentTime;
 
-    // 核心 AI 邏輯：檢查關鍵字或次數，決定是否回覆
-    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "不開心", "討厭", "兇"];
-    const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
+    // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇"];
+    const isNegative = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
-    // 如果是負面情緒或剛好是第 3 次發言，則觸發 AI
-    if (shouldRespond || conversationCount === 3) {
-        await triggerAIPrompt(lastUserMessage.text);
+    // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
+    if (isNegative || conversationCount >= 3) {
+        await triggerAIPrompt(lastUserMessage.text, isNegative);
     }
-    // 否則，AI 保持沉默，讓家庭成員溝通
+    // 否則，AI 保持沉默，讓群組溝通
 }
 
 
-async function triggerAIPrompt(lastUserText) {
+async function triggerAIPrompt(lastUserText, isNegative) {
 
     let promptInstruction = `
-    你現在是Re:Family家庭溝通引導者。你的職責是：
-    1. **被動協調：** 你的發言必須簡短，不應成為群聊中的主要發言者。
-    2. **情緒安撫優先：** 回覆的開頭永遠是同理心和安撫，**不能過度冗長**（安撫段落限制在 1-2 句話）。
-    3. **目標引導：** 當對話進入僵局或達到關鍵次數時，你需提出解決方案。
-    
+    你現在是Re:Family家庭溝通引導者，是群聊中的協調員。
+    你的職責是：觀察並在關鍵時刻（情緒低落或衝突時）介入。
+    **重要原則：你必須極度簡短，發言長度不能超過群聊中任一位家庭成員的發言長度。你不是解決者，而是安撫者。**
+
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
-    
+
     當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
     ---
@@ -235,12 +235,12 @@ async function triggerAIPrompt(lastUserText) {
     ---
     
     請遵循以下流程：
-    
-    1. **如果使用者實際輸入次數小於 3 且剛偵測到負面情緒：**
-       - 回覆結構必須是：[同理心安撫與肯定感受] ||| [溫和的引導與釐清問題]。
-       - 回覆格式：[安撫與同理段落 (極簡單句)] ||| [柔性提問，將發言權交回群組]
+
+    1. **如果偵測到負面情緒 (isNegative=true)：**
+       - 回覆結構必須是：[同理心安撫與肯定感受 (極簡短，1-2句)] ||| [柔性提問，將發言權交回群組]。
+       - 回覆格式：[安撫段落] ||| [溫和提問]
        
-    2. **如果對話次數大於等於 3 (轉折與大冒險)：**
+    2. **如果對話次數大於等於 3 且未解決 (轉折與大冒險)：**
        - 你的回覆必須直接跳到解決方案。
        - 回覆格式：[溫和總結] ||| [溫馨互動挑戰內容] ||| [鼓勵與開放式結語]
        
