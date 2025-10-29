@@ -21,7 +21,6 @@ const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.fire
 // --- 身份識別與房間狀態 (儲存在瀏覽器本地) ---
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
-// 使用 Session ID 作為裝置唯一 ID
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
@@ -58,7 +57,6 @@ function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
-    // 清理所有 * 符號
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
@@ -185,6 +183,7 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 
 async function checkAndTriggerAI(lastUserMessage) {
+    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(currentRoomId)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -227,7 +226,6 @@ async function triggerAIPrompt(lastUserText) {
     
     1. **如果使用者實際輸入次數小於 3 (目前在引導分析階段)：**
        - 回覆結構必須是：[同理心安撫與肯定感受] ||| [溫和的引導與釐清問題]。
-       - 回覆內容：必須簡潔、精準，像真人對話一樣分段發送。
        - 回覆格式：[安撫與同理段落] ||| [溫和提問，引導下一個細節]
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
@@ -296,7 +294,7 @@ window.onload = function() {
          sendButton.disabled = true;
     }
     
-    // ⭐️ 退出按鈕監聽 ⭐️
+    // ⭐️ 退出按鈕事件監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
