@@ -12,7 +12,7 @@ const roomIdInput = document.getElementById('roomIdInput');
 const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
-const leaveRoomButton = document.getElementById('leaveRoomButton');
+const leaveRoomButton = document.getElementById('leaveRoomButton'); 
 
 
 // 獲取 Firestore 實例 (依賴 index.html 中的初始化)
@@ -58,11 +58,13 @@ function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
     
+    // 清理所有 * 符號
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    let headerHtml = '';
 
     if (type === 'user') { // 當前用戶
         messageContainer.classList.add('justify-end');
@@ -76,7 +78,7 @@ function displayMessage(content, type, senderName, timestamp) {
         
         // 修正：匿名模式下，用戶自己的發言頭部顯示名字
         senderName = senderName || currentUserName || '您';
-        const headerHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
+        headerHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         
         const wrapper = document.createElement('div');
         wrapper.classList.add('flex', 'flex-col', 'items-end');
@@ -131,7 +133,6 @@ let displayedMessageIds = new Set();
 function startChatListener(roomId) {
     if (!db) return;
 
-    // 清空舊的聊天內容，並開始監聽新的 Room ID
     chatArea.innerHTML = '';
     displayedMessageIds = new Set();
     conversationHistory = [];
@@ -226,6 +227,7 @@ async function triggerAIPrompt(lastUserText) {
     
     1. **如果使用者實際輸入次數小於 3 (目前在引導分析階段)：**
        - 回覆結構必須是：[同理心安撫與肯定感受] ||| [溫和的引導與釐清問題]。
+       - 回覆內容：必須簡潔、精準，像真人對話一樣分段發送。
        - 回覆格式：[安撫與同理段落] ||| [溫和提問，引導下一個細節]
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
@@ -294,6 +296,7 @@ window.onload = function() {
          sendButton.disabled = true;
     }
     
+    // ⭐️ 退出按鈕監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
