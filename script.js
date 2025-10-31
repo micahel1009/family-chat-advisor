@@ -1,5 +1,5 @@
 // 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
-const GEMINI_API_KEY = "YOUR_GEMINI_API_HERE"; 
+const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
@@ -365,3 +365,4 @@ userInput.addEventListener('keydown', (e) => {
         }
     }
 });
+
