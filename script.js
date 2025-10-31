@@ -1,5 +1,5 @@
 // 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
-const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
+const GEMINI_API_KEY = "YOUR_GEMINI_API_HERE"; 
 
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
@@ -201,33 +201,31 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
-    // 限制 5 秒內不重複觸發 AI (避免連續發言時 AI 過度介入)
     if (currentTime - lastAIMessageTime < 5000) {
-        return; 
+        return; // 5 秒內不重複觸發 AI
     }
     lastAIMessageTime = currentTime;
 
     // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
-    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇"];
-    const isNegative = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "難過"];
+    const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
     // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
-    if (isNegative || conversationCount >= 3) {
-        await triggerAIPrompt(lastUserMessage.text, isNegative);
+    if (shouldRespond || conversationCount >= 3) {
+        await triggerAIPrompt(lastUserMessage.text);
     }
-    // 否則，AI 保持沉默，讓群組溝通
 }
 
 
-async function triggerAIPrompt(lastUserText, isNegative) {
+async function triggerAIPrompt(lastUserText) {
 
     let promptInstruction = `
     你現在是Re:Family家庭溝通引導者，是群聊中的協調員。
     你的職責是：觀察並在關鍵時刻（情緒低落或衝突時）介入。
-    **重要原則：你必須極度簡短，發言長度不能超過群聊中任一位家庭成員的發言長度。你不是解決者，而是安撫者。**
+    **重要原則：你必須極度簡短，發言長度不應超過任一位家庭成員的單段發言長度。你的目的是輔助，而非主導。**
 
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
-
+    
     當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
     ---
@@ -235,12 +233,12 @@ async function triggerAIPrompt(lastUserText, isNegative) {
     ---
     
     請遵循以下流程：
-
-    1. **如果偵測到負面情緒 (isNegative=true)：**
-       - 回覆結構必須是：[同理心安撫與肯定感受 (極簡短，1-2句)] ||| [柔性提問，將發言權交回群組]。
-       - 回覆格式：[安撫段落] ||| [溫和提問]
+    
+    1. **如果使用者實際輸入次數小於 3 且剛偵測到負面情緒：**
+       - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
+       - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
        
-    2. **如果對話次數大於等於 3 且未解決 (轉折與大冒險)：**
+    2. **如果對話次數大於等於 3 (轉折與大冒險)：**
        - 你的回覆必須直接跳到解決方案。
        - 回覆格式：[溫和總結] ||| [溫馨互動挑戰內容] ||| [鼓勵與開放式結語]
        
@@ -306,6 +304,7 @@ window.onload = function() {
          sendButton.disabled = true;
     }
     
+    // ⭐️ 退出按鈕事件監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
