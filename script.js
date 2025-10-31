@@ -207,7 +207,7 @@ async function checkAndTriggerAI(lastUserMessage) {
     lastAIMessageTime = currentTime;
 
     // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
-    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "難過"];
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈"];
     const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
     // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
@@ -222,7 +222,7 @@ async function triggerAIPrompt(lastUserText) {
     let promptInstruction = `
     你現在是Re:Family家庭溝通引導者，是群聊中的協調員。
     你的職責是：觀察並在關鍵時刻（情緒低落或衝突時）介入。
-    **重要原則：你必須極度簡短，發言長度不應超過任一位家庭成員的單段發言長度。你的目的是輔助，而非主導。**
+    **重要原則：你必須極度簡短，發言不應超過任一位家庭成員的單段發言長度。你的目的是輔助，而非主導。**
 
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
     
@@ -234,7 +234,7 @@ async function triggerAIPrompt(lastUserText) {
     
     請遵循以下流程：
     
-    1. **如果使用者實際輸入次數小於 3 且剛偵測到負面情緒：**
+    1. **如果偵測到負面情緒 (shouldRespond=true) 或對話回合少於 3 次：**
        - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
        - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
        
@@ -365,4 +365,3 @@ userInput.addEventListener('keydown', (e) => {
         }
     }
 });
-
