@@ -201,6 +201,7 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
+    // 限制 AI 回覆頻率 (5 秒內不重複觸發 AI)
     if (currentTime - lastAIMessageTime < 5000) {
         return; // 5 秒內不重複觸發 AI
     }
