@@ -201,9 +201,9 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
-    // 限制 AI 回覆頻率 (5 秒內不重複觸發 AI)
+    // 限制 5 秒內不重複觸發 AI
     if (currentTime - lastAIMessageTime < 5000) {
-        return; // 5 秒內不重複觸發 AI
+        return; 
     }
     lastAIMessageTime = currentTime;
 
@@ -223,6 +223,7 @@ async function triggerAIPrompt(lastUserText) {
     let promptInstruction = `
     你現在是Re:Family家庭溝通引導者，是群聊中的協調員。
     你的職責是：觀察並在關鍵時刻（情緒低落或衝突時）介入。
+    
     **重要原則：你必須極度簡短，發言長度不應超過任一位家庭成員的單段發言長度。你的目的是輔助，而非主導。**
 
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
@@ -237,7 +238,8 @@ async function triggerAIPrompt(lastUserText) {
     
     1. **如果偵測到負面情緒 (shouldRespond=true) 或對話回合少於 3 次：**
        - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
-       - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
+       - **安撫段落限制：** 你的安撫必須極簡短，不超過 20 個中文字。
+       - **回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]**
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
        - 你的回覆必須直接跳到解決方案。
@@ -264,10 +266,14 @@ async function triggerAIPrompt(lastUserText) {
         const data = await response.json();
         
         let aiResponse = "連線失敗，請檢查網路。";
+        // 🚨 修正 API 錯誤顯示：將過載錯誤也轉為安撫語句 🚨
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
+        } else if (data.error && data.error.message.includes("overloaded")) {
+             // 捕捉到過載錯誤
+             aiResponse = "我知道大家現在都很需要溝通，但網路有點忙碌，請給彼此一點點時間喘口氣。請家人們先試著自己說說話，我會在這裡等你們。";
         } else if (data.error) {
-             aiResponse = `API 錯誤：${data.error.message}`;
+             aiResponse = `系統協調暫時遇到困難。錯誤訊息：${data.error.message} 請稍後再試。`;
         }
         
         // 寫入資料庫，讓所有人看到 AI 回覆
@@ -279,6 +285,7 @@ async function triggerAIPrompt(lastUserText) {
 
     } catch (error) {
         console.error("Gemini API Error:", error);
+        await sendToDatabase("🚨 抱歉，系統協調暫時遇到困難，請稍後再試。", 'AI', 'Re:Family 智能助手', currentRoomId);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
         sendButton.disabled = false;
