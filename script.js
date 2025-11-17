@@ -201,6 +201,7 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
+    // 限制 5 秒內不重複觸發 AI
     if (currentTime - lastAIMessageTime < 5000) {
         return; // 5 秒內不重複觸發 AI
     }
@@ -227,9 +228,9 @@ async function triggerAIPrompt(lastUserText) {
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
     
     你必須將輔導和提問圍繞在以下核心家庭矛盾的模式：
-    1. 關心被認為是控制。
-    2. 對花費的擔憂被認為是吝嗇。
-    3. 對未來規劃的建議被認為是不尊重。
+    1. 家人對我的關心被我認為是控制。
+    2. 對我花費的擔憂被我認為是吝嗇的。
+    3. 對我未來規劃的建議被我認為是不尊重的。
     
     當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
@@ -239,10 +240,10 @@ async function triggerAIPrompt(lastUserText) {
     
     請遵循以下流程：
     
-    1. **如果偵測到負面情緒或對話回合少於 3 次：**
+    1. **如果偵測到負面情緒 (shouldRespond=true) 或對話回合少於 3 次：**
        - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
        - **安撫段落內容：** 必須極短，只針對情緒提供支持。
-       - **溫和提問：** 提問應是為了釐清背後模式（例如：這是感到不被信任，還是擔心財務問題？）
+       - **溫和提問：** 提問應是為了釐清背後模式（例如：這是感到被不信任，還是擔心財務問題？）
        - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
@@ -277,7 +278,7 @@ async function triggerAIPrompt(lastUserText) {
              // 捕捉到過載錯誤，回傳安撫語句
              aiResponse = "我知道大家現在都很需要溝通，但網路有點忙碌，請給彼此一點點時間喘口氣。請家人們先試著自己說說話，我會在這裡等你們。";
         } else if (data.error) {
-             aiResponse = `系統協調暫時遇到困難。錯誤訊息：${data.error.message} 請稍後再試。`;
+             aiResponse = `系統協調暫時遇到困難。請稍後再試。`;
         }
         
         // 寫入資料庫，讓所有人看到 AI 回覆
