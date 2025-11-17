@@ -6,7 +6,7 @@ const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
 
-// 獲取 Room 入口介面元素
+// 獲取 Room 入口介面元素 (保持不變)
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
 const userNameInput = document.getElementById('userNameInput');
@@ -15,13 +15,12 @@ const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton'); 
 
 
-// 獲取 Firestore 實例 (依賴 index.html 中的初始化)
+// 獲取 Firestore 實例
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
 
 // --- 身份識別與房間狀態 (儲存在瀏覽器本地) ---
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
-// 使用 Session ID 作為裝置唯一 ID
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
@@ -30,24 +29,22 @@ localStorage.setItem('sessionId', sessionId);
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastAIMessageTime = 0; 
+let LAST_USER_SEND_TIME = 0; // 🌟 新增：追蹤用戶上次發言時間 🌟
 
 
-// --- 1. DISPLAY MESSAGE & UI LOGIC ---
+// --- 1. DISPLAY MESSAGE & UI LOGIC (保持不變) ---
 
 function updateUIForChat() {
-    roomEntryScreen.style.display = 'none'; // 隱藏房間入口
-    userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
+    roomEntryScreen.style.display = 'none';
+    userInput.placeholder = `[${currentUserName}] 正在與家人對話... (請等待 10 秒後再發言)`;
     userInput.disabled = false;
     sendButton.disabled = false;
-    leaveRoomButton.classList.remove('hidden'); // 顯示退出按鈕
+    leaveRoomButton.classList.remove('hidden');
     
-    // 更新頂部導航欄狀態
     statusDisplay.textContent = `Room: ${currentRoomId} | 暱稱: ${currentUserName}`;
 
-    // 顯示歡迎語
     chatArea.innerHTML = '';
     
-    // 溫和歡迎語 (分段發送)
     displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室 [${currentRoomId}]。`, 'system', 'Re:Family 智能助手');
     setTimeout(() => {
         displayMessage(`我會在這裡傾聽並協調您和家人的溝通。請先深呼吸，當您準備好時，隨時都可以告訴我發生了什麼事。`, 'system', 'Re:Family 智能助手');
@@ -75,7 +72,6 @@ function displayMessage(content, type, senderName, timestamp) {
         userIcon.classList.add('w-8', 'h-8', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         userIcon.innerHTML = '<i class="fas fa-user text-gray-600 dark:text-gray-300 text-xs"></i>';
         
-        // 修正：匿名模式下，用戶自己的發言頭部顯示名字
         senderName = senderName || currentUserName || '您';
         headerHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         
@@ -106,7 +102,7 @@ function displayMessage(content, type, senderName, timestamp) {
              aiIcon.innerHTML = `<i class="fas fa-heart text-white text-xs"></i>`;
              headerHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>Re:Family 智能助手</strong> <span class="font-normal">${timeStr}</span></div>`;
         } else {
-             aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`; // 其他匿名使用者
+             aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`;
              headerHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         }
         
@@ -125,7 +121,7 @@ function displayMessage(content, type, senderName, timestamp) {
 }
 
 
-// --- 4. FIRESTORE & AI LOGIC ---
+// --- 2. FIRESTORE & AI LOGIC ---
 
 let displayedMessageIds = new Set(); 
 
@@ -201,16 +197,17 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
+    // 限制 5 秒內不重複觸發 AI (為了讓人類有足夠的溝通時間，並確保 AI 不連續發言)
     if (currentTime - lastAIMessageTime < 5000) {
-        return; // 5 秒內不重複觸發 AI
+        return; 
     }
-    lastAIMessageTime = currentTime;
+    lastAIMessageTime = currentTime; // 更新 AI 上次發言時間
 
     // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
     const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈", "崩潰", "壓力", "控制", "吝嗇", "不尊重", "亂花錢", "不必要"];
     const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
-    // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
+    // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次 (總回合數)
     if (shouldRespond || conversationCount >= 3) {
         await triggerAIPrompt(lastUserMessage.text);
     }
@@ -257,7 +254,6 @@ async function triggerAIPrompt(lastUserText) {
     try {
         if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-        // 修正 Invalid JSON payload received 錯誤：config 替換為 generationConfig
         const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -269,12 +265,12 @@ async function triggerAIPrompt(lastUserText) {
 
         const data = await response.json();
         
-        let aiResponse = "系統協調失敗，可能是網路擁塞，請稍後再試。";
-        // 🚨 修正 API 錯誤顯示：將技術錯誤轉為溫和的安撫語句 🚨
+        let aiResponse = ""; // 預設為空字串
+        
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error && data.error.message.includes("overloaded")) {
-             // 捕捉到過載錯誤，回傳新的極簡短安撫語句
+             // 🚨 捕捉到過載錯誤，回傳新的極簡短安撫語句
              aiResponse = "溝通服務擁塞。請家人們繼續對話，我會安靜等待。";
         } else if (data.error) {
              // 捕捉到其他 API 錯誤
@@ -290,6 +286,7 @@ async function triggerAIPrompt(lastUserText) {
 
     } catch (error) {
         console.error("Gemini API Error:", error);
+        // 最終捕捉網路連線失敗，發送最簡單的錯誤提示
         await sendToDatabase("網路連線失敗，請稍後重試。", 'AI', 'Re:Family 智能助手', currentRoomId);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
