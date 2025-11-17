@@ -30,13 +30,16 @@ localStorage.setItem('sessionId', sessionId);
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastAIMessageTime = 0; 
+// 🌟 核心：追蹤用戶上次發言時間 (用於前端 10 秒硬性鎖定) 🌟
+let LAST_USER_SEND_TIME = 0; 
+const COOLDOWN_TIME = 10000; // 10 秒
 
 
 // --- 1. DISPLAY MESSAGE & UI LOGIC ---
 
 function updateUIForChat() {
     roomEntryScreen.style.display = 'none'; // 隱藏房間入口
-    userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
+    userInput.placeholder = `[${currentUserName}] 正在與家人對話... (10秒後可再次發言)`;
     userInput.disabled = false;
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden'); // 顯示退出按鈕
@@ -52,6 +55,18 @@ function updateUIForChat() {
     setTimeout(() => {
         displayMessage(`我會在這裡傾聽並協調您和家人的溝通。請先深呼吸，當您準備好時，隨時都可以告訴我發生了什麼事。`, 'system', 'Re:Family 智能助手');
     }, 1500); 
+}
+
+function updateInputState(remainingTime) {
+    if (remainingTime > 0) {
+        userInput.placeholder = `請等待 ${Math.ceil(remainingTime / 1000)} 秒後再發言`;
+        userInput.disabled = true;
+        sendButton.disabled = true;
+    } else {
+        userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
+        userInput.disabled = false;
+        sendButton.disabled = false;
+    }
 }
 
 function displayMessage(content, type, senderName, timestamp) {
@@ -125,6 +140,8 @@ function displayMessage(content, type, senderName, timestamp) {
 }
 
 
+// --- 4. FIRESTORE & AI LOGIC ---
+
 let displayedMessageIds = new Set(); 
 
 function startChatListener(roomId) {
@@ -153,6 +170,7 @@ function startChatListener(roomId) {
 
                     displayMessage(message.text, messageType, senderDisplayName, message.timestamp);
 
+                    // 🌟 觸發 AI 法官判斷 (只有當前使用者發送時才觸發 AI 邏輯) 🌟
                     if (message.senderId !== 'AI' && isCurrentUser) {
                         checkAndTriggerAI(message);
                     }
@@ -197,9 +215,10 @@ async function checkAndTriggerAI(lastUserMessage) {
     let userMessageCount = conversationHistory.filter(m => m.role === 'user').length;
     conversationCount = userMessageCount;
     
+    // 限制 5 秒內不重複觸發 AI (AI 自己發言的間隔)
     const currentTime = Date.now();
     if (currentTime - lastAIMessageTime < 5000) {
-        return; // 5 秒內不重複觸發 AI
+        return; 
     }
     lastAIMessageTime = currentTime;
 
@@ -228,7 +247,7 @@ async function triggerAIPrompt(lastUserText) {
     2. 對我花費的擔憂被我認為是吝嗇的。
     3. 對我未來規劃的建議被我認為是不尊重的。
     
-    當前使用者實際輸入次數: ${conversationCount}。
+    當前使用者實際輸入次數: ${conversationCount}.
     對話紀錄：
     ---
     ${conversationHistory.map(item => `${item.role}: ${item.text}`).join('\n')}
@@ -266,12 +285,13 @@ async function triggerAIPrompt(lastUserText) {
 
         const data = await response.json();
         
-        let aiResponse = "系統協調失敗，可能是網路擁塞，請稍後再試。";
-        // 🚨 修正 API 錯誤顯示：將技術錯誤轉為溫和的安撫語句 🚨
+        let aiResponse = "";
+        
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error && data.error.message.includes("overloaded")) {
              // 捕捉到過載錯誤，回傳新的極簡短安撫語句
+             // 🚨 這裡就是防止您不希望的重複訊息出現的關鍵 🚨
              aiResponse = "溝通服務擁塞。請家人們繼續對話，我會安靜等待。";
         } else if (data.error) {
              // 捕捉到其他 API 錯誤
@@ -287,6 +307,7 @@ async function triggerAIPrompt(lastUserText) {
 
     } catch (error) {
         console.error("Gemini API Error:", error);
+        // 最終捕捉網路連線失敗，發送最簡單的錯誤提示
         await sendToDatabase("網路連線失敗，請稍後重試。", 'AI', 'Re:Family 智能助手', currentRoomId);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
@@ -297,7 +318,7 @@ async function triggerAIPrompt(lastUserText) {
 }
 
 
-// --- 5. 事件監聽與啟動 ---
+// --- 3. 事件監聽與啟動 (Coldown Logic) ---
 
 window.onload = function() {
     // 檢查是否有存儲的暱稱和房間 ID，如果有則跳過 Room Entry Screen
@@ -314,18 +335,15 @@ window.onload = function() {
          sendButton.disabled = true;
     }
     
-    // ⭐️ 退出按鈕事件監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
 function handleLeaveRoom() {
-    // 清除本地儲存的房間和暱稱資訊
     localStorage.removeItem('chatRoomId');
     localStorage.removeItem('chatUserName');
     currentRoomId = null;
     currentUserName = null;
     
-    // 重新載入頁面，觸發 roomEntryScreen 顯示
     window.location.reload(); 
 }
 
@@ -339,39 +357,60 @@ function handleRoomEntry() {
         return;
     }
 
-    // 儲存資訊
     currentRoomId = roomId;
     currentUserName = userName;
     localStorage.setItem('chatRoomId', currentRoomId);
     localStorage.setItem('chatUserName', currentUserName);
 
-    // 進入聊天室
     startChatListener(currentRoomId);
     updateUIForChat();
 }
 
 
-// 點擊發送按鈕事件
-sendButton.addEventListener('click', () => {
-    if (currentRoomId && currentUserName) {
-        const userText = userInput.value.trim();
-        if (userText) {
-            sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
-            userInput.value = '';
-        }
-    }
-});
+// 核心發送邏輯
+function handleSendAction() {
+    const userText = userInput.value.trim();
+    if (!currentRoomId || !currentUserName || !userText) return;
 
-// 按下 Enter 鍵發送事件
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - LAST_USER_SEND_TIME;
+    const remainingTime = COOLDOWN_TIME - elapsedTime;
+
+    if (remainingTime > 0) {
+        // 🚨 硬性阻止發送並更新 UI 🚨
+        updateInputState(remainingTime);
+        return; 
+    }
+
+    // 設置發言間隔
+    LAST_USER_SEND_TIME = currentTime;
+    
+    sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
+    userInput.value = '';
+
+    // 鎖定 UI 並開始倒計時
+    updateInputState(COOLDOWN_TIME);
+    
+    // 開始定時器，每秒更新提示
+    const timer = setInterval(() => {
+        const newTime = Date.now();
+        const newRemaining = COOLDOWN_TIME - (newTime - LAST_USER_SEND_TIME);
+        
+        updateInputState(newRemaining);
+        
+        if (newRemaining <= 0) {
+            clearInterval(timer);
+            updateInputState(0);
+        }
+    }, 1000);
+}
+
+
+// 恢復點擊與 Enter 鍵事件監聽
+sendButton.addEventListener('click', handleSendAction);
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { 
         e.preventDefault(); 
-        if (currentRoomId && currentUserName) {
-            const userText = userInput.value.trim();
-            if (userText) {
-                sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
-                userInput.value = '';
-            }
-        }
+        handleSendAction();
     }
 });
