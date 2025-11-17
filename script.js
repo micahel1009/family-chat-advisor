@@ -201,14 +201,13 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
-    // 限制 5 秒內不重複觸發 AI
     if (currentTime - lastAIMessageTime < 5000) {
         return; // 5 秒內不重複觸發 AI
     }
     lastAIMessageTime = currentTime;
 
     // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
-    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈"];
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈", "煩"];
     const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
     // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
@@ -264,8 +263,8 @@ async function triggerAIPrompt(lastUserText) {
 
         const data = await response.json();
         
-        let aiResponse = "連線失敗，請檢查網路。";
-        // 🚨 將 API 錯誤轉為溫和的安撫語句 🚨
+        let aiResponse = "系統協調失敗，可能是網路擁塞，請稍後再試。";
+        // 🚨 修正 API 錯誤顯示：將技術錯誤轉為溫和的安撫語句 🚨
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error && data.error.message.includes("overloaded")) {
@@ -284,7 +283,7 @@ async function triggerAIPrompt(lastUserText) {
 
     } catch (error) {
         console.error("Gemini API Error:", error);
-        await sendToDatabase("🚨 抱歉，系統協調暫時遇到困難，請稍後再試。", 'AI', 'Re:Family 智能助手', currentRoomId);
+        await sendToDatabase("🚨 抱歉，系統協調暫時遇到困難，請檢查網路連線。", 'AI', 'Re:Family 智能助手', currentRoomId);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
         sendButton.disabled = false;
