@@ -201,7 +201,6 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
-    // 限制 5 秒內不重複觸發 AI
     if (currentTime - lastAIMessageTime < 5000) {
         return; // 5 秒內不重複觸發 AI
     }
@@ -223,6 +222,7 @@ async function triggerAIPrompt(lastUserText) {
     let promptInstruction = `
     你現在是Re:Family家庭溝通引導者，是群聊中的協調員。
     你的職責是：觀察並在關鍵時刻（情緒低落或衝突時）介入。
+    
     **重要原則：你必須極度簡短，發言長度不應超過任一位家庭成員的單段發言長度。你的目的是輔助，而非主導。**
 
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
@@ -291,7 +291,6 @@ async function triggerAIPrompt(lastUserText) {
 
     } catch (error) {
         console.error("Gemini API Error:", error);
-        // 修正 catch 區塊的訊息
         await sendToDatabase("網路連線失敗，請稍後重試。", 'AI', 'Re:Family 智能助手', currentRoomId);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
