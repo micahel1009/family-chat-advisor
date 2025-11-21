@@ -195,8 +195,8 @@
                             <p class="text-sm text-gray-600 mb-6">
                                 請輸入您家庭專屬的代碼、密碼與您的暱稱，確保溝通只在家人之間。
                             </p>
-                            <input type="text" id="roomIdInput" placeholder="家庭房間代碼 (例如: FamilyA123)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
-                            <input type="password" id="roomPasswordInput" placeholder="房間密碼 (選填，建議設定)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
+                            <input type="text" id="roomIdInput" placeholder="家庭房間代碼 (至少4碼)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
+                            <input type="password" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
                             
                             <input type="text" id="userNameInput" placeholder="您的暱稱 (例如: 爸爸/小美)" class="w-full p-3 mb-4 border rounded-lg focus:ring-warm-orange">
                             <button id="startChatButton" class="w-full px-4 py-3 bg-calm-blue text-white font-bold rounded-lg hover:bg-serene-green transition-colors">
@@ -238,9 +238,189 @@
             </div>
             
             <div id="features-content" class="content-toggle max-h-0 overflow-hidden transition-all duration-300">
-                 </div>        
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">                
+                    <div class="group p-8 bg-gradient-to-br from-white to-orange-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-warm-peach rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-heart text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">情感支持與傾聽</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">透過溫暖的傾聽和對話，陪您梳理心情、緩解壓力，讓您感受到真實的關懷與理解。</p>                
+                    </div>
+                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-pink-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-users text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">溫和溝通引導</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">引導您學會穩定情緒、專注聆聽、理解對方並清晰表達，讓對話更有效。</p>                
+                    </div>
+                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-amber-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:-shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-clock text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">24小時即時陪伴</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">無需預約，無論何時，只要您的情緒需要支持，都可以立即獲得回應與陪伴。</p>                
+                    </div>
+                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-green-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-shield-alt text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">隱私保護</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">對話全程加密，保護您的個人分享，讓您安心訴說內心感受。</p>                
+                    </div>
+                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-warm-peach rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-lightbulb text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">貼心建議</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">根據您的情況，提供量身定制的溝通小技巧和情緒調整方法。</p>                
+                    </div>
+                    
+                    <div class="group p-8 bg-gradient-to-br from-white to-purple-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">                    
+                        <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">                        
+                            <i class="fas fa-brain text-2xl text-white"></i>                    
+                        </div>                    
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">自我理解引導</h3>                    
+                        <p class="text-gray-600 dark:text-gray-400">透過對話，幫助您發現自己情緒和行為背後的原因，促進個人成長。</p>                
+                    </div>            
+                </div>
+            </div>        
         </div>    
     </section>
+
+    <section id="communication" class="py-20" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">
+                <button class="w-full text-center focus:outline-none" onclick="toggleContent(this, 'communication-content')">
+                    <div class="flex items-center justify-center space-x-4">
+                        <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                            <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">溝通技巧小教室</span>                
+                        </h2>
+                        <i class="fas fa-chevron-down text-warm-orange text-3xl transition-transform duration-300 transform rotate-0"></i>
+                    </div>
+                </button>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">                    
+                    這些小技巧能讓您在家庭中，輕鬆建立和諧溫馨的對話                
+                </p>            
+            </div>
+            
+            <div id="communication-content" class="content-toggle max-h-0 overflow-hidden transition-all duration-300">
+                 <div class="grid lg:grid-cols-2 gap-16 items-center mb-20">                
+                    <div class="space-y-8">                    
+                        <h3 class="text-3xl font-bold text-gray-800 dark:text-gray-200">4步驟溫和對話法</h3>                                        
+                        <div class="space-y-6">                        
+                            <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-warm-orange/10 to-warm-peach/10 rounded-2xl">                            
+                                <div class="w-12 h-12 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center flex-shrink-0">                                
+                                    <span class="text-white font-bold">1</span>                            
+                                </div>                            
+                                <div>                                
+                                    <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">穩定情緒</h4>                                
+                                    <p class="text-gray-600 dark:text-gray-400">學習察覺自己的情緒狀態，冷靜下來再開口，避免衝動造成傷害。</p>                            
+                                </div>                        
+                            </div>
+                            
+                            <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-gentle-pink/10 to-soft-coral/10 rounded-2xl">                            
+                                <div class="w-12 h-12 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-full flex items-center justify-center flex-shrink-0">                                
+                                    <span class="text-white font-bold">2</span>                            
+                                </div>                            
+                                <div>                                
+                                    <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">專注聆聽</h4>                                
+                                    <p class="text-gray-600 dark:text-gray-400">用心聽家人想表達的情感和內容，理解他們真正的意思。</p>                            
+                                </div>                        
+                            </div>
+                            
+                            <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-calm-blue/10 to-serene-green/10 rounded-2xl">                            
+                                <div class="w-12 h-12 bg-gradient-to-br from-calm-blue to-serene-green rounded-full flex items-center justify-center flex-shrink-0">                                
+                                    <span class="text-white font-bold">3</span>                            
+                                </div>                            
+                                <div>                                
+                                    <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">同理對方</h4>                                
+                                    <p class="text-gray-600 dark:text-gray-400">試著站在對方的角度思考，感受他們的處境，建立情感連結。</p>                            
+                                </div>                        
+                            </div>
+                            
+                            <div class="flex items-start space-x-4 p-6 bg-gradient-to-r from-warm-peach/10 to-warm-orange/10 rounded-2xl">                            
+                                <div class="w-12 h-12 bg-gradient-to-br from-warm-peach to-warm-orange rounded-full flex items-center justify-center flex-shrink-0">                                
+                                    <span class="text-white font-bold">4</span>                            
+                                </div>                            
+                                <div>                                
+                                    <h4 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">清晰表達</h4>                                
+                                    <p class="text-gray-600 dark:text-gray-400">用溫和明確的語言表達自己的需求和感受，讓對方真正理解。</p>                            
+                                </div>                        
+                            </div>                    
+                        </div>                
+                    </div>
+                    
+                    <div class="relative">                    
+                        <img src="https://api.felo.ai/images/s/FTh6vWA0iX" alt="家庭溝通場景" class="rounded-3xl shadow-2xl">                                        
+                        
+                    </div>            
+                </div>
+                
+                <div class="bg-gradient-to-br from-white to-orange-50/50 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-8 lg:p-12">                
+                    <h3 class="text-2xl font-bold mb-8 text-center text-gray-800 dark:text-gray-200">讓家更溫暖的五種方法</h3>                                
+                    <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">                    
+                        <div class="text-center space-y-4">                        
+                            <div class="w-16 h-16 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center mx-auto">                            
+                                <i class="fas fa-home text-2xl text-white"></i>                        
+                            </div>                        
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">整理居家環境</h4>                        
+                            <p class="text-sm text-gray-600 dark:text-gray-400">創造舒適整潔的家庭氛圍</p>                    
+                        </div>
+                        
+                        <div class="text-center space-y-4">                        
+                            <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-soft-coral rounded-full flex items-center justify-center mx-auto">                            
+                                <i class="fas fa-map-marked-alt text-2xl text-white"></i>                        
+                            </div>                        
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">安排家人出遊</h4>                        
+                            <p class="text-sm text-gray-600 dark:text-gray-400">增加親密互動的機會</p>                    
+                        </div>
+                        
+                        <div class="text-center space-y-4">                        
+                            <div class="w-16 h-16 bg-gradient-to-br from-calm-blue to-serene-green rounded-full flex items-center justify-center mx-auto">                            
+                                <i class="fas fa-utensils text-2xl text-white"></i>                        
+                            </div>                        
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">共同用餐</h4>                        
+                            <p class="text-sm text-gray-600 dark:text-gray-400">分享日常、建立情感連結</p>                    
+                        </div>
+                        
+                        <div class="text-center space-y-4">                        
+                            <div class="w-16 h-16 bg-gradient-to-br from-warm-peach to-warm-orange rounded-full flex items-center justify-center mx-auto">                            
+                                <i class="fas fa-brain text-2xl text-white"></i>                        
+                            </div>                        
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">覺察調節情緒</h4>                        
+                            <p class="text-sm text-gray-600 dark:text-gray-400">學習管理自己的情緒狀態</p>                    
+                        </div>
+                        
+                        <div class="text-center space-y-4">                        
+                            <div class="w-16 h-16 bg-gradient-to-br from-gentle-pink to-warm-orange rounded-full flex items-center justify-center mx-auto">                            
+                                <i class="fas fa-comments text-2xl text-white"></i>                        
+                            </div>                        
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">正向溝通技巧</h4>                        
+                            <p class="text-sm text-gray-600 dark:text-gray-400">練習有效的表達方式</p>                    
+                        </div>                
+                    </div>            
+                </div>
+            </div>        
+        </div>    
+    </section>
+
+    <section class="py-20 bg-gradient-to-br from-warm-orange via-warm-peach to-gentle-pink relative overflow-hidden" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s, transform 0.6s;">        
+        <div class="absolute inset-0 bg-gradient-to-r from-warm-orange/20 to-gentle-pink/20"></div>                
+        <div class="relative max-w-4xl mx-auto px-6 lg:px-8 text-center text-white">            
+            <h2 class="text-4xl lg:text-6xl font-bold mb-6">                
+                開始您的溫暖對話之旅            
+            </h2>            
+            <p class="text-xl lg:text-2xl mb-8 opacity-90">                
+                讓 Re:Family 陪伴您與家人建立更深層的情感連結            
+            </p>                        
+            
+        </div>    
+    </section>
+
     <footer class="bg-gray-900 dark:bg-gray-950 text-white py-12">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
             <div class="flex justify-center"> <div class="space-y-4 text-center"> <div class="flex items-center justify-center space-x-2">                        
