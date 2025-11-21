@@ -26,7 +26,7 @@ let conversationHistory = [];
 let conversationCount = 0; 
 let lastAIMessageTime = 0; 
 let LAST_USER_SEND_TIME = 0; 
-const COOLDOWN_TIME = 10000; // 10 秒
+const COOLDOWN_TIME = 10000; 
 
 // --- 1. ROOM & UI LOGIC ---
 
@@ -91,11 +91,11 @@ function resetEntryButton() {
 
 function updateInputState(remainingTime) {
     if (remainingTime > 0) {
-        userInput.placeholder = `請等待 ${Math.ceil(remainingTime / 1000)} 秒...`;
+        userInput.placeholder = `請等待 ${Math.ceil(remainingTime / 1000)} 秒後再發言`;
         userInput.disabled = true;
         sendButton.disabled = true;
     } else {
-        userInput.placeholder = `[${currentUserName}] 正在對話...`;
+        userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
         userInput.disabled = false;
         sendButton.disabled = false;
     }
@@ -130,11 +130,9 @@ function displayMessage(content, type, senderName, timestamp) {
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${wrapperClass}`;
     wrapper.innerHTML = headerHtml;
-    
     messageBubble.innerHTML = cleanedContent;
     wrapper.appendChild(messageBubble);
     
-    // AI 或其他用戶顯示頭像
     if (type !== 'user') {
         const icon = document.createElement('div');
         icon.className = 'w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0';
@@ -155,7 +153,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC (心理學知識庫整合) ---
+// --- 3. FIRESTORE & AI LOGIC (關鍵字增強) ---
 
 let displayedMessageIds = new Set(); 
 
@@ -175,14 +173,11 @@ function startChatListener(roomId) {
                     const isMe = msg.senderId === sessionId;
                     const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
                     
-                    // 只有非 AI 的訊息才顯示，或者 AI 的訊息顯示為 'Re:Family'
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
                     if (msg.senderId !== 'AI') {
-                        // 更新歷史紀錄供 AI 分析
                         conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
                         conversationCount++;
-                        // 只有自己發送時才觸發檢查，避免重複觸發
                         if (isMe) checkAndTriggerAI(msg.text);
                     }
                 }
@@ -200,20 +195,24 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
-    if (now - lastAIMessageTime < 10000) return; // 10秒 AI 冷卻
+    if (now - lastAIMessageTime < 10000) return; 
     lastAIMessageTime = now;
 
-    // 心理學關鍵詞庫 (針對控制、吝嗇、不尊重)
+    // 🌟 增強版關鍵字庫 (包含口語化衝突詞) 🌟
     const triggers = [
-        "幾點回家", "去哪裡", "報備", "一直傳", "為什麼不回", "控制", // 控制/界線
-        "亂花錢", "浪費", "太貴", "沒必要", "省錢", "賺錢辛苦", // 吝嗇/價值觀
-        "你懂什麼", "沒用", "閉嘴", "囉嗦", "煩", "不想講", "已讀", // 不尊重/疏離
-        "好累", "壓力", "崩潰", "受不了" // 情緒
+        // 控制/界線
+        "幾點回家", "去哪裡", "報備", "一直傳", "為什麼不回", "控制", "管", "煩",
+        // 吝嗇/價值觀
+        "亂花錢", "浪費", "太貴", "沒必要", "省錢", "賺錢辛苦", "垃圾", "買這個幹嘛",
+        // 不尊重/疏離
+        "你懂什麼", "沒用", "閉嘴", "囉嗦", "不想講", "已讀", "隨便", "態度", "沒大沒小",
+        // 強烈情緒
+        "好累", "崩潰", "受不了", "生氣", "滾"
     ];
     
-    // 判斷是否觸發 (包含關鍵詞 OR 每 8 句話檢查一次)
     const hitKeyword = triggers.some(k => lastText.includes(k));
     
+    // 只要打中關鍵字，無論回合數多少，立即嘗試介入
     if (hitKeyword || conversationCount % 8 === 0) {
         await triggerAIPrompt();
     }
@@ -223,23 +222,22 @@ async function triggerAIPrompt() {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者與輔助者。
-    你的任務是運用 **Satir (薩提爾) 模式** 和 **Bowen 家庭系統理論**，協助解決以下三類核心矛盾：
-    1. **關心 vs. 控制** (例如：父母追問行蹤，子女感到窒息)
-    2. **金錢價值觀** (例如：父母擔心花費，子女感到被吝嗇對待)
-    3. **尊重與界線** (例如：建議被視為不尊重，或已讀不回)
+    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者。
+    你的任務是運用 **Satir (薩提爾) 模式**，針對剛剛的衝突點進行極簡短的緩衝：
+    1. **關心 vs. 控制**
+    2. **金錢觀念差異**
+    3. **尊重與界線**
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
-    **請嚴格遵守以下回應規則：**
-    1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **結構：** [同理情緒] + [翻譯深層需求]。
-       - 範例：「感受到雙方都很焦慮。爸爸的追問或許是源於擔心安全，而不僅是想控制。」
-    3. **破冰時機：** 只有當氣氛極度僵持時，才建議：「或許我們先暫停言語，試試給對方一個擁抱？」
-    4. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
+    **請嚴格遵守：**
+    1. **極簡短：** 回應絕對不能超過 2 句話 (約 30 字)。
+    2. **功能：** 只要說出一句同理雙方情緒的話即可，不要試圖解決問題。
+       - 範例：「聽到這句話有點刺耳，或許我們先深呼吸一下，別急著回應。」
+    3. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
     
-    請根據最新對話生成一句溫和的協調語句：
+    請生成一句溫和的緩衝語句：
     `;
 
     try {
@@ -248,7 +246,7 @@ async function triggerAIPrompt() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.6, maxOutputTokens: 100 } 
+                generationConfig: { temperature: 0.6, maxOutputTokens: 60 } // 限制輸出長度
             })
         });
         
@@ -258,8 +256,6 @@ async function triggerAIPrompt() {
         if (data.candidates) {
             aiText = data.candidates[0].content.parts[0].text;
         } else {
-            // 靜默失敗，不發送錯誤訊息干擾對話
-            console.warn("AI 暫無回應"); 
             return;
         }
         
@@ -267,13 +263,13 @@ async function triggerAIPrompt() {
 
     } catch (e) {
         console.error("AI Error", e);
-        // 發生錯誤時保持沉默，不要發送 "Model overloaded" 等技術訊息
+        // 發生錯誤時保持沉默
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
     }
 }
 
-// --- INITIALIZATION ---
+// --- INITIALIZATION & 10s Cooldown ---
 
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -303,7 +299,6 @@ function handleSendAction() {
     sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
     userInput.value = '';
     
-    // 視覺回饋：暫時禁用
     updateInputState(COOLDOWN_TIME);
     const timer = setInterval(() => {
         const remaining = COOLDOWN_TIME - (Date.now() - LAST_USER_SEND_TIME);
