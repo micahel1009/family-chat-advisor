@@ -17,10 +17,16 @@ const leaveRoomButton = document.getElementById('leaveRoomButton');
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
 const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
 
+// --- 1. SESSION ID 持久化 (關鍵修正) ---
+// 確保 sessionId 只有在第一次訪問時生成，之後都從 localStorage 讀取
+let sessionId = localStorage.getItem('deviceSessionId');
+if (!sessionId) {
+    sessionId = `anon_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+    localStorage.setItem('deviceSessionId', sessionId);
+}
+
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
-const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
-localStorage.setItem('sessionId', sessionId);
 
 let conversationHistory = [];
 let conversationCount = 0; 
@@ -28,7 +34,7 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 1. ROOM & UI LOGIC ---
+// --- 2. ROOM LOGIC ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -47,17 +53,26 @@ async function handleRoomEntry() {
         const doc = await roomDocRef.get();
 
         if (doc.exists) {
-            if (doc.data().password !== password) {
+            const data = doc.data();
+            if (data.password !== password) {
                 alert("密碼錯誤！");
                 resetEntryButton();
                 return;
             }
-            if (doc.data().active_users && doc.data().active_users.includes(userName)) {
-                 if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
+            
+            // 檢查暱稱是否被「其他裝置」使用
+            // 注意：這裡只做簡單檢查，如果 Firestore 裡有這個名字，就提示
+            if (data.active_users && data.active_users.includes(userName)) {
+                 // 如果是本人重連 (sessionId 相同)，理論上不會有問題
+                 // 但如果是切換房間後回來，名字可能還在
+                 const confirmUse = confirm(`暱稱 "${userName}" 顯示已在房間中。這是您剛離開的連線嗎？\n(是本人請按確定，若是重名請按取消並更換暱稱)`);
+                 if (!confirmUse) {
                      resetEntryButton();
                      return;
                  }
             }
+            
+            // 將暱稱加入活躍列表
             await roomDocRef.update({
                 active_users: firebase.firestore.FieldValue.arrayUnion(userName)
             });
@@ -89,13 +104,42 @@ function resetEntryButton() {
     startChatButton.textContent = "開始群聊";
 }
 
+async function handleLeaveRoom() {
+    if (!currentRoomId || !currentUserName) {
+        performLocalLogout();
+        return;
+    }
+
+    // 嘗試從 Firestore 移除自己的暱稱
+    try {
+        await db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId).update({
+            active_users: firebase.firestore.FieldValue.arrayRemove(currentUserName)
+        });
+    } catch (e) {
+        console.error("移除用戶狀態失敗 (可能房間已刪除或網路問題)", e);
+    }
+
+    performLocalLogout();
+}
+
+function performLocalLogout() {
+    localStorage.removeItem('chatRoomId');
+    localStorage.removeItem('chatUserName');
+    // 注意：不要移除 deviceSessionId，保持裝置身份
+    currentRoomId = null;
+    currentUserName = null;
+    window.location.reload();
+}
+
+// --- 3. UI & CHAT LOGIC ---
+
 function updateInputState(remainingTime) {
     if (remainingTime > 0) {
         userInput.placeholder = `請等待 ${Math.ceil(remainingTime / 1000)} 秒後再發言`;
         userInput.disabled = true;
         sendButton.disabled = true;
     } else {
-        userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
+        userInput.placeholder = `[${currentUserName}] 正在對話...`;
         userInput.disabled = false;
         sendButton.disabled = false;
     }
@@ -117,8 +161,14 @@ function displayMessage(content, type, senderName, timestamp) {
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
-    let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     
+    // 格式化時間
+    let timeStr = '';
+    if (timestamp) {
+        const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     let wrapperClass = type === 'user' ? 'items-end' : 'items-start';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
     
@@ -153,8 +203,6 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC (關鍵字增強) ---
-
 let displayedMessageIds = new Set(); 
 
 function startChatListener(roomId) {
@@ -170,6 +218,8 @@ function startChatListener(roomId) {
                 const msg = change.doc.data();
                 if (!displayedMessageIds.has(change.doc.id)) {
                     displayedMessageIds.add(change.doc.id);
+                    
+                    // 🌟 核心修正：使用持久化的 sessionId 判斷是否為自己 🌟
                     const isMe = msg.senderId === sessionId;
                     const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
                     
@@ -178,6 +228,7 @@ function startChatListener(roomId) {
                     if (msg.senderId !== 'AI') {
                         conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
                         conversationCount++;
+                        // 只有是自己發的訊息，才觸發 AI 檢查 (避免多人同時觸發)
                         if (isMe) checkAndTriggerAI(msg.text);
                     }
                 }
@@ -193,26 +244,22 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
     });
 }
 
+// --- 4. AI LOGIC ---
+
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
     if (now - lastAIMessageTime < 10000) return; 
     lastAIMessageTime = now;
 
-    // 🌟 增強版關鍵字庫 (包含口語化衝突詞) 🌟
     const triggers = [
-        // 控制/界線
-        "幾點回家", "去哪裡", "報備", "一直傳", "為什麼不回", "控制", "管", "煩",
-        // 吝嗇/價值觀
-        "亂花錢", "浪費", "太貴", "沒必要", "省錢", "賺錢辛苦", "垃圾", "買這個幹嘛",
-        // 不尊重/疏離
-        "你懂什麼", "沒用", "閉嘴", "囉嗦", "不想講", "已讀", "隨便", "態度", "沒大沒小",
-        // 強烈情緒
-        "好累", "崩潰", "受不了", "生氣", "滾"
+        "幾點回家", "去哪裡", "報備", "一直傳", "為什麼不回", "控制", 
+        "亂花錢", "浪費", "太貴", "沒必要", "省錢", "賺錢辛苦", 
+        "你懂什麼", "沒用", "閉嘴", "囉嗦", "煩", "不想講", "已讀", 
+        "好累", "崩潰", "受不了"
     ];
     
     const hitKeyword = triggers.some(k => lastText.includes(k));
     
-    // 只要打中關鍵字，無論回合數多少，立即嘗試介入
     if (hitKeyword || conversationCount % 8 === 0) {
         await triggerAIPrompt();
     }
@@ -223,21 +270,20 @@ async function triggerAIPrompt() {
 
     const prompt = `
     你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者。
-    你的任務是運用 **Satir (薩提爾) 模式**，針對剛剛的衝突點進行極簡短的緩衝：
-    1. **關心 vs. 控制**
-    2. **金錢觀念差異**
-    3. **尊重與界線**
+    你的任務是運用 **Satir (薩提爾) 模式**，協助解決以下核心矛盾：
+    1. 關心被誤解為控制
+    2. 金錢觀念差異
+    3. 建議被誤解為不尊重
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
     **請嚴格遵守：**
-    1. **極簡短：** 回應絕對不能超過 2 句話 (約 30 字)。
-    2. **功能：** 只要說出一句同理雙方情緒的話即可，不要試圖解決問題。
-       - 範例：「聽到這句話有點刺耳，或許我們先深呼吸一下，別急著回應。」
+    1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
+    2. **結構：** [同理情緒] + [翻譯深層需求]。
     3. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
     
-    請生成一句溫和的緩衝語句：
+    請生成一句溫和的協調語句：
     `;
 
     try {
@@ -246,7 +292,7 @@ async function triggerAIPrompt() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.6, maxOutputTokens: 60 } // 限制輸出長度
+                generationConfig: { temperature: 0.6, maxOutputTokens: 100 } 
             })
         });
         
@@ -256,6 +302,7 @@ async function triggerAIPrompt() {
         if (data.candidates) {
             aiText = data.candidates[0].content.parts[0].text;
         } else {
+            console.warn("AI 暫無回應"); 
             return;
         }
         
@@ -263,13 +310,12 @@ async function triggerAIPrompt() {
 
     } catch (e) {
         console.error("AI Error", e);
-        // 發生錯誤時保持沉默
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
     }
 }
 
-// --- INITIALIZATION & 10s Cooldown ---
+// --- 5. INITIALIZATION ---
 
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -280,14 +326,16 @@ window.onload = function() {
         startChatButton.addEventListener('click', handleRoomEntry);
     }
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
+    
+    // 視窗關閉前嘗試移除 (不保證成功)
+    window.addEventListener('beforeunload', () => {
+        if (currentRoomId && currentUserName) {
+             // 使用 Beacon API 發送請求 (比 fetch 更適合在 unload 時使用)
+             // 但由於這需要後端支持，我們這裡只能盡力而為
+        }
+    });
 };
 
-function handleLeaveRoom() {
-    localStorage.clear();
-    window.location.reload();
-}
-
-// 10秒冷卻邏輯
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !userText) return;
