@@ -6,6 +6,7 @@ const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
 
+// 獲取 Room 入口介面元素
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
 const roomPasswordInput = document.getElementById('roomPasswordInput');
@@ -17,16 +18,10 @@ const leaveRoomButton = document.getElementById('leaveRoomButton');
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
 const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
 
-// --- 1. SESSION ID 持久化 (關鍵修正) ---
-// 確保 sessionId 只有在第一次訪問時生成，之後都從 localStorage 讀取
-let sessionId = localStorage.getItem('deviceSessionId');
-if (!sessionId) {
-    sessionId = `anon_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
-    localStorage.setItem('deviceSessionId', sessionId);
-}
-
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
+const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
+localStorage.setItem('sessionId', sessionId);
 
 let conversationHistory = [];
 let conversationCount = 0; 
@@ -34,7 +29,7 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 2. ROOM LOGIC ---
+// --- 1. ROOM & UI LOGIC ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -53,26 +48,17 @@ async function handleRoomEntry() {
         const doc = await roomDocRef.get();
 
         if (doc.exists) {
-            const data = doc.data();
-            if (data.password !== password) {
+            if (doc.data().password !== password) {
                 alert("密碼錯誤！");
                 resetEntryButton();
                 return;
             }
-            
-            // 檢查暱稱是否被「其他裝置」使用
-            // 注意：這裡只做簡單檢查，如果 Firestore 裡有這個名字，就提示
-            if (data.active_users && data.active_users.includes(userName)) {
-                 // 如果是本人重連 (sessionId 相同)，理論上不會有問題
-                 // 但如果是切換房間後回來，名字可能還在
-                 const confirmUse = confirm(`暱稱 "${userName}" 顯示已在房間中。這是您剛離開的連線嗎？\n(是本人請按確定，若是重名請按取消並更換暱稱)`);
-                 if (!confirmUse) {
+            if (doc.data().active_users && doc.data().active_users.includes(userName)) {
+                 if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
                      resetEntryButton();
                      return;
                  }
             }
-            
-            // 將暱稱加入活躍列表
             await roomDocRef.update({
                 active_users: firebase.firestore.FieldValue.arrayUnion(userName)
             });
@@ -104,42 +90,13 @@ function resetEntryButton() {
     startChatButton.textContent = "開始群聊";
 }
 
-async function handleLeaveRoom() {
-    if (!currentRoomId || !currentUserName) {
-        performLocalLogout();
-        return;
-    }
-
-    // 嘗試從 Firestore 移除自己的暱稱
-    try {
-        await db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId).update({
-            active_users: firebase.firestore.FieldValue.arrayRemove(currentUserName)
-        });
-    } catch (e) {
-        console.error("移除用戶狀態失敗 (可能房間已刪除或網路問題)", e);
-    }
-
-    performLocalLogout();
-}
-
-function performLocalLogout() {
-    localStorage.removeItem('chatRoomId');
-    localStorage.removeItem('chatUserName');
-    // 注意：不要移除 deviceSessionId，保持裝置身份
-    currentRoomId = null;
-    currentUserName = null;
-    window.location.reload();
-}
-
-// --- 3. UI & CHAT LOGIC ---
-
 function updateInputState(remainingTime) {
     if (remainingTime > 0) {
         userInput.placeholder = `請等待 ${Math.ceil(remainingTime / 1000)} 秒後再發言`;
         userInput.disabled = true;
         sendButton.disabled = true;
     } else {
-        userInput.placeholder = `[${currentUserName}] 正在對話...`;
+        userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
         userInput.disabled = false;
         sendButton.disabled = false;
     }
@@ -161,14 +118,8 @@ function displayMessage(content, type, senderName, timestamp) {
     const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
+    let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     
-    // 格式化時間
-    let timeStr = '';
-    if (timestamp) {
-        const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
-        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
     let wrapperClass = type === 'user' ? 'items-end' : 'items-start';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
     
@@ -203,6 +154,8 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
+// --- 3. FIRESTORE & AI LOGIC ---
+
 let displayedMessageIds = new Set(); 
 
 function startChatListener(roomId) {
@@ -218,8 +171,6 @@ function startChatListener(roomId) {
                 const msg = change.doc.data();
                 if (!displayedMessageIds.has(change.doc.id)) {
                     displayedMessageIds.add(change.doc.id);
-                    
-                    // 🌟 核心修正：使用持久化的 sessionId 判斷是否為自己 🌟
                     const isMe = msg.senderId === sessionId;
                     const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
                     
@@ -228,7 +179,6 @@ function startChatListener(roomId) {
                     if (msg.senderId !== 'AI') {
                         conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
                         conversationCount++;
-                        // 只有是自己發的訊息，才觸發 AI 檢查 (避免多人同時觸發)
                         if (isMe) checkAndTriggerAI(msg.text);
                     }
                 }
@@ -243,8 +193,6 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
         text: text, senderId: senderId, senderName: senderName, timestamp: Date.now()
     });
 }
-
-// --- 4. AI LOGIC ---
 
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
@@ -265,25 +213,29 @@ async function checkAndTriggerAI(lastText) {
     }
 }
 
+// 🌟 核心 AI Prompt 邏輯 (整合新理論) 🌟
 async function triggerAIPrompt() {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者。
-    你的任務是運用 **Satir (薩提爾) 模式**，協助解決以下核心矛盾：
-    1. 關心被誤解為控制
-    2. 金錢觀念差異
-    3. 建議被誤解為不尊重
+    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者，也是一位**文化翻譯官**。
+    你的任務是結合 **Satir (薩提爾) 模式** (情緒冰山) 與 **Bourdieu (布迪厄) 社會學** (慣習與文化資本)，協助轉譯以下核心矛盾：
+
+    1. **關心 vs. 控制**：父母的「焦慮慣習」 vs. 子女的「獨立需求」。
+    2. **金錢價值觀**：父母視省錢為「生存資本」 vs. 子女視花費為「社交資本/體驗」。
+    3. **尊重與界線**：世代間「文化框架」的碰撞。
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
-    **請嚴格遵守：**
+    **請嚴格遵守以下回應規則：**
     1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **結構：** [同理情緒] + [翻譯深層需求]。
+    2. **文化翻譯 (Cultural Translation)：** 不要只安撫情緒，試著**解釋行為背後的「慣習」差異**。
+       - 錯誤：「爸爸是愛你的。」(太敷衍)
+       - 正確：「爸爸的省錢或許是過去養成的生存習慣，而不僅是針對你。」(解釋慣習)
     3. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
     
-    請生成一句溫和的協調語句：
+    請生成一句溫和且具備洞察力的協調語句：
     `;
 
     try {
@@ -315,7 +267,7 @@ async function triggerAIPrompt() {
     }
 }
 
-// --- 5. INITIALIZATION ---
+// --- INITIALIZATION & 10s Cooldown ---
 
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -326,15 +278,12 @@ window.onload = function() {
         startChatButton.addEventListener('click', handleRoomEntry);
     }
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
-    
-    // 視窗關閉前嘗試移除 (不保證成功)
-    window.addEventListener('beforeunload', () => {
-        if (currentRoomId && currentUserName) {
-             // 使用 Beacon API 發送請求 (比 fetch 更適合在 unload 時使用)
-             // 但由於這需要後端支持，我們這裡只能盡力而為
-        }
-    });
 };
+
+function handleLeaveRoom() {
+    localStorage.clear();
+    window.location.reload();
+}
 
 function handleSendAction() {
     const userText = userInput.value.trim();
