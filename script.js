@@ -1,5 +1,5 @@
 // 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
-const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dYE"; 
+const GEMINI_API_KEY = "AIzaSyA5yEKm4fqDpBE7u7lCRrAtrcGv8pJ67dY"; 
 
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
@@ -9,6 +9,7 @@ const loadingIndicator = document.getElementById('loadingIndicator');
 // 獲取 Room 入口介面元素
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
+const roomPasswordInput = document.getElementById('roomPasswordInput'); // 新增密碼輸入
 const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
@@ -30,7 +31,6 @@ localStorage.setItem('sessionId', sessionId);
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastAIMessageTime = 0; 
-
 // 🌟 核心：追蹤用戶上次發言時間 (用於前端 10 秒硬性鎖定) 🌟
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; // 10 秒
@@ -58,13 +58,13 @@ function updateUIForChat() {
     leaveRoomButton.classList.remove('hidden'); // 顯示退出按鈕
     
     // 更新頂部導航欄狀態
-    statusDisplay.textContent = `Room: ${currentRoomId} | 暱稱: ${currentUserName}`;
+    statusDisplay.textContent = `Room: ${currentRoomId.split('_')[0]} | 暱稱: ${currentUserName}`; // 只顯示 Room ID 前半部，隱藏密碼
 
     // 顯示歡迎語
     chatArea.innerHTML = '';
     
     // 溫和歡迎語 (分段發送)
-    displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室 [${currentRoomId}]。`, 'system', 'Re:Family 智能助手');
+    displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室。`, 'system', 'Re:Family 智能助手');
     setTimeout(() => {
         displayMessage(`我會在這裡傾聽並協調您和家人的溝通。請先深呼吸，當您準備好時，隨時都可以告訴我發生了什麼事。`, 'system', 'Re:Family 智能助手');
     }, 1500); 
@@ -171,6 +171,7 @@ function startChatListener(roomId) {
 
                     displayMessage(message.text, messageType, senderDisplayName, message.timestamp);
 
+                    // 🌟 觸發 AI 法官判斷 (只有當前使用者發送時才觸發 AI 邏輯) 🌟
                     if (message.senderId !== 'AI' && isCurrentUser) {
                         checkAndTriggerAI(message);
                     }
@@ -216,8 +217,9 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
+    // 限制 5 秒內不重複觸發 AI (避免連續發言時 AI 過度介入)
     if (currentTime - lastAIMessageTime < 5000) {
-        return; // 5 秒內不重複觸發 AI
+        return; 
     }
     lastAIMessageTime = currentTime;
 
@@ -256,7 +258,7 @@ async function triggerAIPrompt(lastUserText) {
     
     1. **如果偵測到負面情緒 (shouldRespond=true) 或對話回合少於 3 次：**
        - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
-       - **安撫段落內容：** 必須極短，只針對情緒提供支持 (例如：看到你說...，感覺很不好受，我在這裡陪伴你)。
+       - **安撫段落內容：** 必須極短，只針對情緒提供支持。
        - **溫和提問：** 提問應是為了釐清背後模式，並將發言權交回群組。
        - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
        
@@ -284,12 +286,12 @@ async function triggerAIPrompt(lastUserText) {
 
         const data = await response.json();
         
-        let aiResponse = "系統協調失敗，可能是網路擁塞，請稍後再試。";
-        // 🚨 修正 API 錯誤顯示：將技術錯誤轉為溫和的安撫語句 🚨
+        let aiResponse = "";
+        
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error && data.error.message.includes("overloaded")) {
-             // 捕捉到過載錯誤，回傳新的極簡短安撫語句
+             // 🚨 捕捉到過載錯誤，回傳新的極簡短安撫語句
              aiResponse = "溝通服務擁塞。請家人們繼續對話，我會安靜等待。";
         } else if (data.error) {
              // 捕捉到其他 API 錯誤
@@ -350,15 +352,23 @@ function handleLeaveRoom() {
 
 function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); // 僅允許字母數字
+    const roomPassword = roomPasswordInput.value.trim(); // 獲取密碼
     const userName = userNameInput.value.trim();
 
-    if (!roomId || !userName) {
-        alert("請輸入有效的房間代碼和暱稱！");
+    if (roomId.length < 3) {
+        alert("房間代碼至少需要 3 個字母或數字！");
         return;
     }
+    if (!userName) {
+        alert("請輸入有效的暱稱！");
+        return;
+    }
+    
+    // ⭐️ 關鍵：將密碼作為 Room ID 的後綴，實現簡易的「前端密碼隔離」 ⭐️
+    const secureRoomId = roomPassword ? `${roomId}_${roomPassword}` : roomId;
 
     // 儲存資訊
-    currentRoomId = roomId;
+    currentRoomId = secureRoomId;
     currentUserName = userName;
     localStorage.setItem('chatRoomId', currentRoomId);
     localStorage.setItem('chatUserName', currentUserName);
@@ -407,8 +417,6 @@ function handleSendAction() {
     }, 1000);
 }
 
-
-// 恢復點擊與 Enter 鍵事件監聽
 sendButton.addEventListener('click', handleSendAction);
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { 
