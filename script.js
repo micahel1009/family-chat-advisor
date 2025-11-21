@@ -9,15 +9,16 @@ const loadingIndicator = document.getElementById('loadingIndicator');
 // 獲取 Room 入口介面元素
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
-const roomPasswordInput = document.getElementById('roomPasswordInput'); // 新增密碼輸入
+const roomPasswordInput = document.getElementById('roomPasswordInput'); // 新增
 const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
-const leaveRoomButton = document.getElementById('leaveRoomButton'); 
+const leaveRoomButton = document.getElementById('leaveRoomButton');
 
 
 // 獲取 Firestore 實例 (依賴 index.html 中的初始化)
 const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
+const ROOMS_METADATA_COLLECTION = 'rooms_metadata'; // 儲存房間密碼和狀態的集合
 
 // --- 身份識別與房間狀態 (儲存在瀏覽器本地) ---
 let currentUserName = localStorage.getItem('chatUserName') || null; 
@@ -31,12 +32,94 @@ localStorage.setItem('sessionId', sessionId);
 let conversationHistory = [];
 let conversationCount = 0; 
 let lastAIMessageTime = 0; 
-// 🌟 核心：追蹤用戶上次發言時間 (用於前端 10 秒硬性鎖定) 🌟
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; // 10 秒
 
 
-// --- 1. DISPLAY MESSAGE & UI LOGIC ---
+// --- 1. ROOM ENTRY & VALIDATION LOGIC (核心修正) ---
+
+async function handleRoomEntry() {
+    const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
+    const password = roomPasswordInput.value.trim();
+    const userName = userNameInput.value.trim();
+
+    if (roomId.length < 4) {
+        alert("房間代碼至少需要 4 個數字/字母！");
+        return;
+    }
+    if (!password) {
+        alert("請輸入房間密碼！");
+        return;
+    }
+    if (!userName) {
+        alert("請輸入您的暱稱！");
+        return;
+    }
+
+    startChatButton.disabled = true;
+    startChatButton.textContent = "驗證中...";
+
+    try {
+        const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
+        const doc = await roomDocRef.get();
+
+        if (doc.exists) {
+            // --- 房間已存在：驗證密碼與暱稱 ---
+            const roomData = doc.data();
+            
+            if (roomData.password !== password) {
+                alert("密碼錯誤！無法進入此房間。");
+                resetEntryButton();
+                return;
+            }
+            
+            if (roomData.active_users && roomData.active_users.includes(userName)) {
+                // 簡單的重複檢查：如果該暱稱已被使用 (且不是自己之前的 session)，提示更換
+                // 這裡為了簡化，假設只要名字重複就擋，實際應用可能需要更複雜的 session 判斷
+                 const confirmUse = confirm(`暱稱 "${userName}" 似乎已在房間中。這是您之前的連線嗎？\n(如果是，請按確定；如果不是，請按取消並更換暱稱)`);
+                 if (!confirmUse) {
+                     resetEntryButton();
+                     return;
+                 }
+            }
+            
+            // 驗證通過：更新活躍用戶列表
+            await roomDocRef.update({
+                active_users: firebase.firestore.FieldValue.arrayUnion(userName)
+            });
+
+        } else {
+            // --- 房間不存在：創建新房間 ---
+            await roomDocRef.set({
+                password: password,
+                created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                active_users: [userName]
+            });
+        }
+
+        // --- 成功進入 ---
+        currentRoomId = roomId;
+        currentUserName = userName;
+        localStorage.setItem('chatRoomId', currentRoomId);
+        localStorage.setItem('chatUserName', currentUserName);
+        
+        startChatListener(currentRoomId);
+        updateUIForChat();
+
+    } catch (error) {
+        console.error("房間驗證錯誤:", error);
+        alert("驗證失敗，請檢查網路連線。");
+        resetEntryButton();
+    }
+}
+
+function resetEntryButton() {
+    startChatButton.disabled = false;
+    startChatButton.textContent = "開始群聊";
+}
+
+
+// --- 2. UI LOGIC ---
 
 function updateInputState(remainingTime) {
     if (remainingTime > 0) {
@@ -51,20 +134,17 @@ function updateInputState(remainingTime) {
 }
 
 function updateUIForChat() {
-    roomEntryScreen.style.display = 'none'; // 隱藏房間入口
+    roomEntryScreen.style.display = 'none'; 
     userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
     userInput.disabled = false;
     sendButton.disabled = false;
-    leaveRoomButton.classList.remove('hidden'); // 顯示退出按鈕
+    leaveRoomButton.classList.remove('hidden'); 
     
-    // 更新頂部導航欄狀態
-    statusDisplay.textContent = `Room: ${currentRoomId.split('_')[0]} | 暱稱: ${currentUserName}`; // 只顯示 Room ID 前半部，隱藏密碼
+    statusDisplay.textContent = `Room: ${currentRoomId} | 暱稱: ${currentUserName}`;
 
-    // 顯示歡迎語
     chatArea.innerHTML = '';
     
-    // 溫和歡迎語 (分段發送)
-    displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室。`, 'system', 'Re:Family 智能助手');
+    displayMessage(`歡迎您，${currentUserName}！這裡是家庭調解室 [${currentRoomId}]。`, 'system', 'Re:Family 智能助手');
     setTimeout(() => {
         displayMessage(`我會在這裡傾聽並協調您和家人的溝通。請先深呼吸，當您準備好時，隨時都可以告訴我發生了什麼事。`, 'system', 'Re:Family 智能助手');
     }, 1500); 
@@ -81,7 +161,7 @@ function displayMessage(content, type, senderName, timestamp) {
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     let headerHtml = '';
 
-    if (type === 'user') { // 當前用戶
+    if (type === 'user') { 
         messageContainer.classList.add('justify-end');
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-warm-orange', 'to-warm-peach', 
@@ -91,7 +171,6 @@ function displayMessage(content, type, senderName, timestamp) {
         userIcon.classList.add('w-8', 'h-8', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         userIcon.innerHTML = '<i class="fas fa-user text-gray-600 dark:text-gray-300 text-xs"></i>';
         
-        // 修正：匿名模式下，用戶自己的發言頭部顯示名字
         senderName = senderName || currentUserName || '您';
         headerHtml = `<div class="text-xs text-right text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         
@@ -104,7 +183,7 @@ function displayMessage(content, type, senderName, timestamp) {
         messageContainer.appendChild(wrapper);
         messageContainer.appendChild(userIcon);
         
-    } else { // AI 或其他使用者 (靠左)
+    } else { 
         messageBubble.classList.add(
             'bg-gradient-to-r', 'from-orange-50', 'to-pink-50', 
             'dark:from-gray-700', 'dark:to-gray-600', 'p-4', 
@@ -114,15 +193,11 @@ function displayMessage(content, type, senderName, timestamp) {
         const aiIcon = document.createElement('div');
         aiIcon.classList.add('w-8', 'h-8', 'bg-gradient-to-br', 'from-warm-orange', 'to-warm-peach', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
         
-        const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-        
-        let headerHtml = '';
-        
         if (senderName === 'Re:Family 智能助手') {
              aiIcon.innerHTML = `<i class="fas fa-heart text-white text-xs"></i>`;
              headerHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>Re:Family 智能助手</strong> <span class="font-normal">${timeStr}</span></div>`;
         } else {
-             aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`; // 其他匿名使用者
+             aiIcon.innerHTML = `<i class="fas fa-users text-white text-xs"></i>`; 
              headerHtml = `<div class="text-xs text-left text-gray-500 dark:text-gray-400 mb-1"><strong>${senderName}</strong> <span class="font-normal">${timeStr}</span></div>`;
         }
         
@@ -141,7 +216,7 @@ function displayMessage(content, type, senderName, timestamp) {
 }
 
 
-// --- 4. FIRESTORE & AI LOGIC ---
+// --- 3. FIRESTORE & AI LOGIC ---
 
 let displayedMessageIds = new Set(); 
 
@@ -171,7 +246,6 @@ function startChatListener(roomId) {
 
                     displayMessage(message.text, messageType, senderDisplayName, message.timestamp);
 
-                    // 🌟 觸發 AI 法官判斷 (只有當前使用者發送時才觸發 AI 邏輯) 🌟
                     if (message.senderId !== 'AI' && isCurrentUser) {
                         checkAndTriggerAI(message);
                     }
@@ -200,7 +274,6 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 
 async function checkAndTriggerAI(lastUserMessage) {
-    // 獲取最新的 10 條訊息作為歷史記錄
     const snapshot = await db.collection(currentRoomId)
         .orderBy('timestamp', 'desc')
         .limit(10) 
@@ -217,17 +290,14 @@ async function checkAndTriggerAI(lastUserMessage) {
     conversationCount = userMessageCount;
     
     const currentTime = Date.now();
-    // 限制 5 秒內不重複觸發 AI (避免連續發言時 AI 過度介入)
     if (currentTime - lastAIMessageTime < 5000) {
         return; 
     }
     lastAIMessageTime = currentTime;
 
-    // 核心 AI 邏輯：只在偵測到負面情緒或達到挑戰次數時回覆
-    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈", "崩潰", "壓力", "控制", "吝嗇", "不尊重", "亂花錢", "不必要"];
+    const negativeKeywords = ["好煩", "很累", "不舒服", "難過", "生氣", "吵架", "兇", "委屈", "太過分", "無奈"];
     const shouldRespond = negativeKeywords.some(keyword => lastUserMessage.text.includes(keyword));
 
-    // 觸發條件：1. 偵測到負面情緒 OR 2. 累計發言達到 3 次
     if (shouldRespond || conversationCount >= 3) {
         await triggerAIPrompt(lastUserMessage.text);
     }
@@ -243,11 +313,6 @@ async function triggerAIPrompt(lastUserText) {
 
     重要限制：在你的所有回覆中，絕對不能使用任何粗體標記符號，例如 **、# 或 * 等符號。
     
-    你必須將輔導和提問圍繞在以下核心家庭矛盾的模式：
-    1. 家人對我的關心被我認為是控制。
-    2. 對我花費的擔憂被我認為是吝嗇的。
-    3. 對我未來規劃的建議被我認為是不尊重的。
-    
     當前使用者實際輸入次數: ${conversationCount}。
     對話紀錄：
     ---
@@ -258,8 +323,6 @@ async function triggerAIPrompt(lastUserText) {
     
     1. **如果偵測到負面情緒 (shouldRespond=true) 或對話回合少於 3 次：**
        - 回覆結構必須是：[同理心安撫與肯定感受 (1句)] ||| [溫和的引導與釐清問題 (1句)]。
-       - **安撫段落內容：** 必須極短，只針對情緒提供支持。
-       - **溫和提問：** 提問應是為了釐清背後模式，並將發言權交回群組。
        - 回覆格式：[安撫段落] ||| [溫和提問，將發言權交回群組]
        
     2. **如果對話次數大於等於 3 (轉折與大冒險)：**
@@ -274,7 +337,6 @@ async function triggerAIPrompt(lastUserText) {
     try {
         if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-        // 修正 Invalid JSON payload received 錯誤：config 替換為 generationConfig
         const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -291,18 +353,15 @@ async function triggerAIPrompt(lastUserText) {
         if (data.candidates && data.candidates.length > 0) {
             aiResponse = data.candidates[0].content.parts[0].text;
         } else if (data.error && data.error.message.includes("overloaded")) {
-             // 🚨 捕捉到過載錯誤，回傳新的極簡短安撫語句
              aiResponse = "溝通服務擁塞。請家人們繼續對話，我會安靜等待。";
         } else if (data.error) {
-             // 捕捉到其他 API 錯誤
              aiResponse = `系統連線暫時中斷。請稍後再試。`;
         }
         
-        // 寫入資料庫，讓所有人看到 AI 回覆
         const responseParts = aiResponse.split('|||').map(part => part.trim()).filter(part => part.length > 0);
         for (const part of responseParts) {
              await sendToDatabase(part, 'AI', 'Re:Family 智能助手', currentRoomId);
-             await new Promise(resolve => setTimeout(resolve, 1000)); // 模擬打字間隔
+             await new Promise(resolve => setTimeout(resolve, 1000)); 
         }
 
     } catch (error) {
@@ -320,92 +379,59 @@ async function triggerAIPrompt(lastUserText) {
 // --- 5. 事件監聽與啟動 ---
 
 window.onload = function() {
-    // 檢查是否有存儲的暱稱和房間 ID，如果有則跳過 Room Entry Screen
     if (currentUserName && currentRoomId) {
         startChatListener(currentRoomId);
         updateUIForChat();
     } else {
-         // 顯示 Room Entry Screen
          roomEntryScreen.style.display = 'flex';
          startChatButton.addEventListener('click', handleRoomEntry);
-         leaveRoomButton.classList.add('hidden'); // 隱藏退出按鈕
-         // 確保按鈕和輸入框是不可用的
+         leaveRoomButton.classList.add('hidden'); 
          userInput.disabled = true;
          sendButton.disabled = true;
     }
     
-    // ⭐️ 退出按鈕事件監聽 ⭐️
     leaveRoomButton.addEventListener('click', handleLeaveRoom);
 };
 
 function handleLeaveRoom() {
-    // 清除本地儲存的房間和暱稱資訊
+    // 離開時，嘗試從 metadata 中移除暱稱 (簡單實作，可能需要更嚴謹的後端邏輯)
+    if (currentRoomId && currentUserName) {
+         db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId).update({
+             active_users: firebase.firestore.FieldValue.arrayRemove(currentUserName)
+         }).catch(err => console.log("移除用戶失敗 (可能房間已刪除)", err));
+    }
+
     localStorage.removeItem('chatRoomId');
     localStorage.removeItem('chatUserName');
     currentRoomId = null;
     currentUserName = null;
     
-    // 重新載入頁面，觸發 roomEntryScreen 顯示
     window.location.reload(); 
 }
-
-
-function handleRoomEntry() {
-    const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); // 僅允許字母數字
-    const roomPassword = roomPasswordInput.value.trim(); // 獲取密碼
-    const userName = userNameInput.value.trim();
-
-    if (roomId.length < 3) {
-        alert("房間代碼至少需要 3 個字母或數字！");
-        return;
-    }
-    if (!userName) {
-        alert("請輸入有效的暱稱！");
-        return;
-    }
-    
-    // ⭐️ 關鍵：將密碼作為 Room ID 的後綴，實現簡易的「前端密碼隔離」 ⭐️
-    const secureRoomId = roomPassword ? `${roomId}_${roomPassword}` : roomId;
-
-    // 儲存資訊
-    currentRoomId = secureRoomId;
-    currentUserName = userName;
-    localStorage.setItem('chatRoomId', currentRoomId);
-    localStorage.setItem('chatUserName', currentUserName);
-
-    // 進入聊天室
-    startChatListener(currentRoomId);
-    updateUIForChat();
-}
-
 
 // 核心發送邏輯
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !currentUserName || !userText) return;
 
-    const currentTime = DateOfAction();
+    const currentTime = new Date().getTime();
     const elapsedTime = currentTime - LAST_USER_SEND_TIME;
     const remainingTime = COOLDOWN_TIME - elapsedTime;
 
     if (remainingTime > 0) {
-        // 🚨 硬性阻止發送並更新 UI 🚨
         updateInputState(remainingTime);
         return; 
     }
 
-    // 設置發言間隔
     LAST_USER_SEND_TIME = currentTime;
     
     sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
     userInput.value = '';
 
-    // 鎖定 UI 並開始倒計時
     updateInputState(COOLDOWN_TIME);
     
-    // 開始定時器，每秒更新提示
     const timer = setInterval(() => {
-        const newTime = DateOfAction();
+        const newTime = new Date().getTime();
         const newRemaining = COOLDOWN_TIME - (newTime - LAST_USER_SEND_TIME);
         
         updateInputState(newRemaining);
@@ -424,7 +450,3 @@ userInput.addEventListener('keydown', (e) => {
         handleSendAction();
     }
 });
-
-function DateOfAction() {
-    return new Date().getTime();
-}
