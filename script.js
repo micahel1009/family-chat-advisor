@@ -28,8 +28,8 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 1. ROOM & UI LOGIC ---
-// (保持不變)
+// --- 1. 房間驗證與 UI 邏輯 ---
+
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
     const password = roomPasswordInput.value.trim();
@@ -95,7 +95,7 @@ function updateInputState(remainingTime) {
         userInput.disabled = true;
         sendButton.disabled = true;
     } else {
-        userInput.placeholder = `[${currentUserName}] 正在與家人對話...`;
+        userInput.placeholder = `[${currentUserName}] 正在對話...`;
         userInput.disabled = false;
         sendButton.disabled = false;
     }
@@ -108,7 +108,7 @@ function updateUIForChat() {
     leaveRoomButton.classList.remove('hidden');
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
-    displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴。`, 'system', 'Re:Family');
+    displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
 }
 
 function displayMessage(content, type, senderName, timestamp) {
@@ -153,7 +153,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC ---
+// --- 3. FIRESTORE & AI LOGIC (核心修正：被動協調) ---
 
 let displayedMessageIds = new Set(); 
 
@@ -176,8 +176,10 @@ function startChatListener(roomId) {
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
                     if (msg.senderId !== 'AI') {
+                        // 記錄對話，但不立即觸發
                         conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
                         conversationCount++;
+                        // 只有是自己發的訊息，才嘗試觸發檢查
                         if (isMe) checkAndTriggerAI(msg.text);
                     }
                 }
@@ -195,48 +197,50 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
-    if (now - lastAIMessageTime < 10000) return; 
+    if (now - lastAIMessageTime < 10000) return; // 10秒 AI 冷卻
     lastAIMessageTime = now;
 
+    // 心理學關鍵詞 (針對三大矛盾：控制、吝嗇、不尊重)
     const triggers = [
-        "幾點回家", "去哪裡", "報備", "一直傳", "為什麼不回", "控制", 
-        "亂花錢", "浪費", "太貴", "沒必要", "省錢", "賺錢辛苦", 
-        "你懂什麼", "沒用", "閉嘴", "囉嗦", "煩", "不想講", "已讀", 
-        "好累", "崩潰", "受不了"
+        "煩", "累", "生氣", "吵架", "兇", // 情緒
+        "控制", "管", "報備", "一直傳", // 矛盾1: 控制
+        "亂花錢", "浪費", "太貴", "省錢", // 矛盾2: 吝嗇
+        "沒用", "閉嘴", "囉嗦", "不懂"  // 矛盾3: 不尊重
     ];
     
     const hitKeyword = triggers.some(k => lastText.includes(k));
     
-    if (hitKeyword || conversationCount % 8 === 0) {
-        await triggerAIPrompt();
+    // 策略：
+    // 1. 有關鍵字 -> 立即介入 (情緒安撫)
+    // 2. 無關鍵字但累積 5 句 -> 介入 (換位思考)
+    if (hitKeyword || conversationCount % 5 === 0) {
+        await triggerAIPrompt(hitKeyword);
     }
 }
 
-// 🌟 核心 AI Prompt (注入諮商理論與社會學) 🌟
-async function triggerAIPrompt() {
+async function triggerAIPrompt(isEmergency) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
+    // 🌟 核心 Prompt：注入 Satir 與 Bowen 理論 🌟
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者，也是一位**具備諮商技巧的翻譯官**。
-    你的任務是結合 **Satir (薩提爾) 模式**、**Bowen 家庭系統理論** 與 **Bourdieu (布迪厄) 慣習理論**，協助家庭成員從「情緒反應」走向「覺察與理解」。
-
-    **請針對以下三個核心矛盾進行「文化翻譯」與「情緒辨識」：**
-    1. **關心 vs. 控制**：將父母的焦慮翻譯為「害怕失去掌控 + 擔心受傷」；將子女的抗拒翻譯為「希望被信任 + 獨立需求」。
-    2. **金錢價值觀**：將父母的省錢慣習翻譯為「生存資本/安全感」；將子女的花費翻譯為「社交資本/體驗」。
-    3. **尊重與界線**：當出現指導/命令時，提醒父母轉為「支持者」，尊重子女作為成年人的選擇權。
+    你現在是「Re:Family」家庭溝通協調員。你的角色是**被動的觀察者**與**翻譯官**。
+    
+    **你的目標：** 協助家庭成員看見彼此行為背後的善意或需求，特別是針對以下矛盾：
+    1. **關心 vs. 控制**：(翻譯：父母的控制其實是焦慮，子女的反抗其實是求獨立)
+    2. **金錢價值觀**：(翻譯：省錢是為了安全感，花錢是為了體驗)
+    3. **尊重與界線**：(翻譯：建議被視為不尊重，需要建立界線)
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
-    **請嚴格遵守以下回應規則：**
+    **請嚴格遵守以下規則：**
     1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **功能 - 轉譯 (Emotion Identification)：** 不要只說「別生氣」，而是試著**翻譯**話語背後的善意或需求。
-       - 範例：「這句話聽起來像指責，但背後是不是藏著擔心受傷的心情呢？」
-       - 範例：「爸爸提到的省錢，或許是過去養成的生存習慣，而不僅是針對你。」
-    3. **功能 - 覺察 (Self-awareness)：** 引導雙方看見自己的情緒。
-    4. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
+    2. **任務：** - 如果是情緒字眼 (isEmergency)，請進行「情緒同理」+「柔性翻譯」。(例：「感受到大家的火氣。這背後是不是因為太擔心對方受傷了？」)
+       - 如果是普通對話，請進行「換位思考提問」。(例：「爸爸這麼說，或許是希望...，小明你覺得呢？」)
+    3. **破冰：** 只有在極度僵持時，才建議：「要不要試試看，現在給對方一個擁抱？」
+    4. **禁止：** 不要素質教育、不要長篇大論。
     
-    請生成一句溫和、具備洞察力的協調語句：
+    請生成一句溫和的協調語句：
     `;
 
     try {
@@ -250,25 +254,23 @@ async function triggerAIPrompt() {
         });
         
         const data = await response.json();
-        let aiText = "";
-
-        if (data.candidates) {
-            aiText = data.candidates[0].content.parts[0].text;
-        } else {
-            console.warn("AI 暫無回應"); 
-            return;
-        }
         
-        await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
+        if (data.candidates && data.candidates.length > 0) {
+            const aiText = data.candidates[0].content.parts[0].text;
+            await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
+        } else {
+            // 靜默失敗
+        }
 
     } catch (e) {
-        console.error("AI Error", e);
+        console.error("AI Error (Silent)", e);
+        // 絕對不再發送任何錯誤訊息
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
     }
 }
 
-// --- INITIALIZATION & 10s Cooldown ---
+// --- INITIALIZATION & COOLDOWN ---
 
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -286,7 +288,6 @@ function handleLeaveRoom() {
     window.location.reload();
 }
 
-// 10秒冷卻邏輯
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !userText) return;
