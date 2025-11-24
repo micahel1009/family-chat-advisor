@@ -34,9 +34,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script> 
     
     <script>
-        // ⚠️ 請務必確認此處填入正確的 Firebase 配置
+        // ⚠️ 請務必填入您的 Firebase 配置
         const firebaseConfig = {
-            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
+            apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E", 
             authDomain: "familychatadvisor.firebaseapp.com",
             projectId: "familychatadvisor",
             storageBucket: "familychatadvisor.appspot.com",
@@ -65,27 +65,18 @@
             z-index: 40; 
             padding: 16px;
         }
-        * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
-        *::-webkit-scrollbar { width: 6px !important;}
-        *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
-        *::-webkit-scrollbar-track { background-color: transparent !important; border-radius: 9999px !important;}
-        
+        /* 房間加入介面樣式 */
         #roomEntryScreen { 
-            position: absolute; 
-            top: 0; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
+            position: absolute; top: 0; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); 
             z-index: 50;
             display: none; 
-            align-items: center;
-            justify-content: center;
+            align-items: center; justify-content: center;
             padding: 20px;
         }
     </style>
 </head>
-<body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300" style="cursor: default;">
+<body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300">
     
     <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-orange-100 dark:border-gray-700">        
         <div class="max-w-7xl mx-auto px-6 lg:px-8">            
@@ -105,7 +96,6 @@
                     </button>
                     <span id="current-user-status" class="text-sm">未加入</span> 
                 </div>
-
                 <button id="theme-toggle" class="p-2 rounded-lg bg-orange-100 dark:bg-gray-800 text-warm-orange dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-gray-700 transition-colors">                    
                     <i class="fas fa-sun dark:hidden"></i>                    
                     <i class="fas fa-moon hidden dark:inline"></i>                
@@ -127,7 +117,6 @@
                         專為家庭溝通設計的溫暖平台，用溫柔對話技巧，讓每一次交流都充滿理解與關愛。
                     </p>                
                 </div>                                
-                
                 <div class="flex items-center space-x-8 text-sm text-gray-500 dark:text-gray-400">                    
                     <div class="flex items-center space-x-2">                        
                         <i class="fas fa-comment-dots text-warm-orange"></i>
@@ -139,7 +128,6 @@
                     </div>                
                 </div>            
             </div>
-            
             <div class="relative">                
                 <div class="relative z-10">                    
                     <img src="./440186.jpg" alt="Re:Family 溝通調解概念圖" class="rounded-3xl shadow-2xl">                
@@ -148,13 +136,9 @@
                 <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
             </div>        
         </div>
-        
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">            
-            <i class="fas fa-chevron-down text-warm-orange text-2xl"></i>        
-        </div>    
     </section>
 
-    <section id="chat" class="py-20" style="opacity: 1;">        
+    <section id="chat" class="py-20">        
         <div class="max-w-4xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16">                
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
