@@ -6,7 +6,6 @@ const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
 
-// 獲取 Room 入口介面元素
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
 const roomPasswordInput = document.getElementById('roomPasswordInput');
@@ -30,7 +29,7 @@ let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 10000; 
 
 // --- 1. ROOM & UI LOGIC ---
-
+// (保持不變)
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
     const password = roomPasswordInput.value.trim();
@@ -213,29 +212,31 @@ async function checkAndTriggerAI(lastText) {
     }
 }
 
-// 🌟 核心 AI Prompt 邏輯 (整合新理論) 🌟
+// 🌟 核心 AI Prompt (注入諮商理論與社會學) 🌟
 async function triggerAIPrompt() {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者，也是一位**文化翻譯官**。
-    你的任務是結合 **Satir (薩提爾) 模式** (情緒冰山) 與 **Bourdieu (布迪厄) 社會學** (慣習與文化資本)，協助轉譯以下核心矛盾：
+    你現在是「Re:Family」家庭溝通協調員。你的角色是**極度被動**的觀察者，也是一位**具備諮商技巧的翻譯官**。
+    你的任務是結合 **Satir (薩提爾) 模式**、**Bowen 家庭系統理論** 與 **Bourdieu (布迪厄) 慣習理論**，協助家庭成員從「情緒反應」走向「覺察與理解」。
 
-    1. **關心 vs. 控制**：父母的「焦慮慣習」 vs. 子女的「獨立需求」。
-    2. **金錢價值觀**：父母視省錢為「生存資本」 vs. 子女視花費為「社交資本/體驗」。
-    3. **尊重與界線**：世代間「文化框架」的碰撞。
+    **請針對以下三個核心矛盾進行「文化翻譯」與「情緒辨識」：**
+    1. **關心 vs. 控制**：將父母的焦慮翻譯為「害怕失去掌控 + 擔心受傷」；將子女的抗拒翻譯為「希望被信任 + 獨立需求」。
+    2. **金錢價值觀**：將父母的省錢慣習翻譯為「生存資本/安全感」；將子女的花費翻譯為「社交資本/體驗」。
+    3. **尊重與界線**：當出現指導/命令時，提醒父母轉為「支持者」，尊重子女作為成年人的選擇權。
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
     **請嚴格遵守以下回應規則：**
     1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **文化翻譯 (Cultural Translation)：** 不要只安撫情緒，試著**解釋行為背後的「慣習」差異**。
-       - 錯誤：「爸爸是愛你的。」(太敷衍)
-       - 正確：「爸爸的省錢或許是過去養成的生存習慣，而不僅是針對你。」(解釋慣習)
-    3. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
+    2. **功能 - 轉譯 (Emotion Identification)：** 不要只說「別生氣」，而是試著**翻譯**話語背後的善意或需求。
+       - 範例：「這句話聽起來像指責，但背後是不是藏著擔心受傷的心情呢？」
+       - 範例：「爸爸提到的省錢，或許是過去養成的生存習慣，而不僅是針對你。」
+    3. **功能 - 覺察 (Self-awareness)：** 引導雙方看見自己的情緒。
+    4. **禁止事項：** 不要說教、不要長篇大論、不要使用 Markdown 粗體。
     
-    請生成一句溫和且具備洞察力的協調語句：
+    請生成一句溫和、具備洞察力的協調語句：
     `;
 
     try {
@@ -285,6 +286,7 @@ function handleLeaveRoom() {
     window.location.reload();
 }
 
+// 10秒冷卻邏輯
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !userText) return;
