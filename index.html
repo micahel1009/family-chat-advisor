@@ -32,7 +32,7 @@
     <style>
         .chat-container-card { height: 500px; position: relative; overflow: hidden; }
         
-        /* 🌟 修正：聊天區域底部增加安全距離，避免被輸入框擋住 */
+        /* 修正：聊天訊息區底部留白，避開變高的輸入框 */
         .chat-messages-area {
             position: absolute; top: 64px; left: 0; right: 0; 
             overflow-y: auto;
@@ -40,19 +40,17 @@
             bottom: calc(80px + env(safe-area-inset-bottom)); 
         }
 
-        /* 🌟 修正：輸入框底部增加安全距離，適配 iPhone */
+        /* 修正：輸入框底部增加安全距離 (Safe Area) */
         .chat-input-fixed {
             position: absolute; bottom: 0; left: 0; right: 0; 
             z-index: 40; 
             padding: 16px;
             padding-bottom: calc(16px + env(safe-area-inset-bottom));
-            background-color: white; /* 確保背景不透明 */
+            background-color: white; 
         }
         
-        /* Dark mode 適配 */
         html.dark .chat-input-fixed { background-color: #1f2937; }
 
-        /* 滾動條樣式 */
         * { scrollbar-width: thin !important; scrollbar-color: #bfc5ce transparent !important;}
         *::-webkit-scrollbar { width: 6px !important;}
         *::-webkit-scrollbar-thumb { background-color: #bfc5ce !important; border-radius: 9999px !important;}
@@ -134,7 +132,7 @@
         <div class="max-w-4xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16">                
                 <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
-                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗</span>                
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span>                
                 </h2>                
             </div>
             
@@ -182,17 +180,17 @@
 
     <script src="script.js"></script>
     
-    <script>       
-        const themeToggle = document.getElementById('theme-toggle');       
+    <script>        
+        const themeToggle = document.getElementById('theme-toggle');        
         const html = document.documentElement;
-        const savedTheme = localStorage.getItem('theme');       
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';       
+        const savedTheme = localStorage.getItem('theme');        
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';        
         const initialTheme = savedTheme || systemTheme;
         html.classList.toggle('dark', initialTheme === 'dark');
-        themeToggle.addEventListener('click', () => {           
-            const isDark = html.classList.contains('dark');           
-            html.classList.toggle('dark');           
-            localStorage.setItem('theme', isDark ? 'light' : 'dark');       
+        themeToggle.addEventListener('click', () => {            
+            const isDark = html.classList.contains('dark');            
+            html.classList.toggle('dark');            
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');        
         });
     </script>
 </body>
