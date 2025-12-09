@@ -1,11 +1,27 @@
-// 🚨 替換成您在 Google AI Studio 取得的 Gemini API 金鑰 🚨
+// 🚨 1. 替換成您在 Google AI Studio 取得的 Gemini API 金鑰
 const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc"; 
 
+// 🚨 2. 替換成您在 Firebase Console 的配置 (必須填寫！)
+const firebaseConfig = {
+    apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
+    authDomain: "familychatadvisor.firebaseapp.com",
+    projectId: "familychatadvisor",
+    storageBucket: "familychatadvisor.firebasestorage.app",
+    messagingSenderId: "172272099421",
+    appId: "1:172272099421:web:a67b69291419194189edb4",
+    measurementId: "G-SRY5B3JV85"
+  };
+
+// 初始化 Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
+
+// DOM 元素
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
-
 const roomEntryScreen = document.getElementById('roomEntryScreen');
 const roomIdInput = document.getElementById('roomIdInput');
 const roomPasswordInput = document.getElementById('roomPasswordInput');
@@ -14,9 +30,7 @@ const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
 
-const db = typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null;
-const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
-
+// 狀態變數
 let currentUserName = localStorage.getItem('chatUserName') || null; 
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
@@ -28,7 +42,7 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 1. 房間驗證與 UI 邏輯 ---
+// --- 1. 房間與 UI 邏輯 ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -130,6 +144,7 @@ function displayMessage(content, type, senderName, timestamp) {
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${wrapperClass}`;
     wrapper.innerHTML = headerHtml;
+    
     messageBubble.innerHTML = cleanedContent;
     wrapper.appendChild(messageBubble);
     
@@ -153,7 +168,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC (核心修正：被動協調) ---
+// --- 3. FIRESTORE & AI LOGIC (核心修正) ---
 
 let displayedMessageIds = new Set(); 
 
@@ -176,10 +191,8 @@ function startChatListener(roomId) {
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
                     if (msg.senderId !== 'AI') {
-                        // 記錄對話，但不立即觸發
                         conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
                         conversationCount++;
-                        // 只有是自己發的訊息，才嘗試觸發檢查
                         if (isMe) checkAndTriggerAI(msg.text);
                     }
                 }
@@ -197,23 +210,18 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
-    if (now - lastAIMessageTime < 10000) return; // 10秒 AI 冷卻
+    if (now - lastAIMessageTime < 10000) return; 
     lastAIMessageTime = now;
 
-    // 心理學關鍵詞 (針對三大矛盾：控制、吝嗇、不尊重)
     const triggers = [
-        "煩", "累", "生氣", "吵架", "兇", // 情緒
-        "控制", "管", "報備", "一直傳", // 矛盾1: 控制
-        "亂花錢", "浪費", "太貴", "省錢", // 矛盾2: 吝嗇
-        "沒用", "閉嘴", "囉嗦", "不懂"  // 矛盾3: 不尊重
+        "煩", "累", "生氣", "吵架", "兇", "控制", "管", "報備", "一直傳", 
+        "亂花錢", "浪費", "太貴", "省錢", "沒用", "閉嘴", "囉嗦", "不懂", "態度",
+        "垃圾", "不想講", "隨便"
     ];
     
     const hitKeyword = triggers.some(k => lastText.includes(k));
     
-    // 策略：
-    // 1. 有關鍵字 -> 立即介入 (情緒安撫)
-    // 2. 無關鍵字但累積 5 句 -> 介入 (換位思考)
-    if (hitKeyword || conversationCount % 5 === 0) {
+    if (hitKeyword || conversationCount % 8 === 0) {
         await triggerAIPrompt(hitKeyword);
     }
 }
@@ -221,26 +229,25 @@ async function checkAndTriggerAI(lastText) {
 async function triggerAIPrompt(isEmergency) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-    // 🌟 核心 Prompt：注入 Satir 與 Bowen 理論 🌟
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**被動的觀察者**與**翻譯官**。
-    
-    **你的目標：** 協助家庭成員看見彼此行為背後的善意或需求，特別是針對以下矛盾：
-    1. **關心 vs. 控制**：(翻譯：父母的控制其實是焦慮，子女的反抗其實是求獨立)
-    2. **金錢價值觀**：(翻譯：省錢是為了安全感，花錢是為了體驗)
-    3. **尊重與界線**：(翻譯：建議被視為不尊重，需要建立界線)
+    你現在是「Re:Family」家庭溝通協調員。你的角色是**敏銳的觀察者**與**文化翻譯官**。
+    請運用 **Satir (薩提爾) 模式** 與 **Bowen 理論**，協助家庭成員「翻譯」彼此的話語：
+    1. **關心 vs. 控制**：(翻譯：將父母的控制翻譯為焦慮，子女的反抗翻譯為求獨立)
+    2. **金錢價值觀**：(翻譯：將省錢翻譯為安全感，花錢翻譯為體驗)
+    3. **尊重與界線**：(翻譯：將建議翻譯為不被尊重)
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
     **請嚴格遵守以下規則：**
     1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **任務：** - 如果是情緒字眼 (isEmergency)，請進行「情緒同理」+「柔性翻譯」。(例：「感受到大家的火氣。這背後是不是因為太擔心對方受傷了？」)
-       - 如果是普通對話，請進行「換位思考提問」。(例：「爸爸這麼說，或許是希望...，小明你覺得呢？」)
-    3. **破冰：** 只有在極度僵持時，才建議：「要不要試試看，現在給對方一個擁抱？」
+    2. **任務：** - **不要再安撫了，請直接「翻譯」！**
+       - 範例：「孩子這句話聽起來很衝，但其實是在說：『我也希望被信任』，對嗎？」
+       - 範例：「爸爸這麼生氣，是不是因為太擔心你會在外面受傷？」
+    3. **破冰：** 只有在對話完全卡住時，才建議：「要不要試試看，現在給對方一個擁抱？」
     4. **禁止：** 不要素質教育、不要長篇大論。
     
-    請生成一句溫和的協調語句：
+    請生成一句具備洞察力的翻譯語句：
     `;
 
     try {
@@ -259,18 +266,17 @@ async function triggerAIPrompt(isEmergency) {
             const aiText = data.candidates[0].content.parts[0].text;
             await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
         } else {
-            // 靜默失敗
+            console.warn("AI 忙碌中 (Silent)");
         }
 
     } catch (e) {
         console.error("AI Error (Silent)", e);
-        // 絕對不再發送任何錯誤訊息
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
     }
 }
 
-// --- INITIALIZATION & COOLDOWN ---
+// --- INITIALIZATION ---
 
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -314,4 +320,3 @@ sendButton.addEventListener('click', handleSendAction);
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
 });
-
