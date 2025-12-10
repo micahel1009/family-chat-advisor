@@ -42,7 +42,39 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 1. 房間與 UI 邏輯 (已更新 TTL 與路徑) ---
+// --- 新增功能：手動清理過期資料 (免信用卡方案) ---
+async function cleanupExpiredData(roomId) {
+    console.log("正在檢查過期資料...");
+    const now = new Date();
+
+    try {
+        // 1. 清理過期訊息
+        const messagesRef = db.collection('rooms').doc(roomId).collection('messages');
+        const snapshot = await messagesRef.where('expireAt', '<', now).get();
+        
+        if (!snapshot.empty) {
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`已清理 ${snapshot.size} 則過期訊息`);
+        }
+
+        // 2. 檢查房間是否過期 (如果是，順便清理房間設定)
+        const roomRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
+        const roomDoc = await roomRef.get();
+        if (roomDoc.exists && roomDoc.data().expireAt && roomDoc.data().expireAt.toDate() < now) {
+            // 這裡我們不刪除房間 metadata，避免正在用的人被踢出
+            // 只是作為一種檢查機制，真正刪除靠上面的訊息清理就夠了
+            console.log("房間已達過期標準");
+        }
+    } catch (error) {
+        console.warn("清理過程遇到權限限制或錯誤 (可能是沒有過期資料):", error);
+    }
+}
+
+// --- 房間與 UI 邏輯 ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -60,8 +92,7 @@ async function handleRoomEntry() {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
 
-        // 🚨 設定過期時間：目前時間 + 5天 (毫秒)
-        // 5天 * 24小時 * 60分鐘 * 60秒 * 1000毫秒
+        // 設定 5 天後過期
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
 
         if (doc.exists) {
@@ -76,13 +107,11 @@ async function handleRoomEntry() {
                       return;
                  }
             }
-            // 更新房間的 expireAt，讓活躍的房間壽命延長 5 天
             await roomDocRef.update({
                 active_users: firebase.firestore.FieldValue.arrayUnion(userName),
                 expireAt: expireDate 
             });
         } else {
-            // 建立新房間，設定 5 天壽命
             await roomDocRef.set({
                 password: password,
                 created_at: firebase.firestore.FieldValue.serverTimestamp(),
@@ -96,6 +125,9 @@ async function handleRoomEntry() {
         localStorage.setItem('chatRoomId', currentRoomId);
         localStorage.setItem('chatUserName', currentUserName);
         
+        // 🚨 關鍵：進入房間時，順手幫忙清理垃圾
+        cleanupExpiredData(currentRoomId);
+
         startChatListener(currentRoomId);
         updateUIForChat();
 
@@ -176,7 +208,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC (已更新路徑與 TTL) ---
+// --- FIRESTORE & AI LOGIC ---
 
 let displayedMessageIds = new Set(); 
 
@@ -187,8 +219,7 @@ function startChatListener(roomId) {
     conversationHistory = [];
     conversationCount = 0;
 
-    // 🚨 關鍵修改：監聽 'rooms/{roomId}/messages' 子集合
-    // 這樣結構比較整齊，且方便 Firebase 進行 TTL 清理
+    // 監聽 'rooms/{roomId}/messages'
     db.collection('rooms').doc(roomId).collection('messages')
       .orderBy('timestamp')
       .limit(50)
@@ -217,16 +248,15 @@ function startChatListener(roomId) {
 async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
     
-    // 🚨 設定訊息過期時間：5天
+    // 設定 5 天後過期
     const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
 
-    // 寫入 'rooms/{roomId}/messages'
     await db.collection('rooms').doc(roomId).collection('messages').add({
         text: text, 
         senderId: senderId, 
         senderName: senderName, 
         timestamp: Date.now(),
-        expireAt: expireDate // 告訴 Firestore 5 天後刪除這條訊息
+        expireAt: expireDate
     });
 }
 
