@@ -42,7 +42,7 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 1. 房間與 UI 邏輯 ---
+// --- 1. 房間與 UI 邏輯 (已更新 TTL 與路徑) ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -60,6 +60,10 @@ async function handleRoomEntry() {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
 
+        // 🚨 設定過期時間：目前時間 + 5天 (毫秒)
+        // 5天 * 24小時 * 60分鐘 * 60秒 * 1000毫秒
+        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+
         if (doc.exists) {
             if (doc.data().password !== password) {
                 alert("密碼錯誤！");
@@ -68,17 +72,21 @@ async function handleRoomEntry() {
             }
             if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                  if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
-                     resetEntryButton();
-                     return;
+                      resetEntryButton();
+                      return;
                  }
             }
+            // 更新房間的 expireAt，讓活躍的房間壽命延長 5 天
             await roomDocRef.update({
-                active_users: firebase.firestore.FieldValue.arrayUnion(userName)
+                active_users: firebase.firestore.FieldValue.arrayUnion(userName),
+                expireAt: expireDate 
             });
         } else {
+            // 建立新房間，設定 5 天壽命
             await roomDocRef.set({
                 password: password,
                 created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                expireAt: expireDate, 
                 active_users: [userName]
             });
         }
@@ -168,7 +176,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 3. FIRESTORE & AI LOGIC (核心修正) ---
+// --- 3. FIRESTORE & AI LOGIC (已更新路徑與 TTL) ---
 
 let displayedMessageIds = new Set(); 
 
@@ -179,7 +187,12 @@ function startChatListener(roomId) {
     conversationHistory = [];
     conversationCount = 0;
 
-    db.collection(roomId).orderBy('timestamp').limit(50).onSnapshot(snapshot => {
+    // 🚨 關鍵修改：監聽 'rooms/{roomId}/messages' 子集合
+    // 這樣結構比較整齊，且方便 Firebase 進行 TTL 清理
+    db.collection('rooms').doc(roomId).collection('messages')
+      .orderBy('timestamp')
+      .limit(50)
+      .onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
             if (change.type === 'added') {
                 const msg = change.doc.data();
@@ -203,8 +216,17 @@ function startChatListener(roomId) {
 
 async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
-    await db.collection(roomId).add({
-        text: text, senderId: senderId, senderName: senderName, timestamp: Date.now()
+    
+    // 🚨 設定訊息過期時間：5天
+    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+
+    // 寫入 'rooms/{roomId}/messages'
+    await db.collection('rooms').doc(roomId).collection('messages').add({
+        text: text, 
+        senderId: senderId, 
+        senderName: senderName, 
+        timestamp: Date.now(),
+        expireAt: expireDate // 告訴 Firestore 5 天後刪除這條訊息
     });
 }
 
@@ -242,8 +264,8 @@ async function triggerAIPrompt(isEmergency) {
     **請嚴格遵守以下規則：**
     1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
     2. **任務：** - **不要再安撫了，請直接「翻譯」！**
-       - 範例：「孩子這句話聽起來很衝，但其實是在說：『我也希望被信任』，對嗎？」
-       - 範例：「爸爸這麼生氣，是不是因為太擔心你會在外面受傷？」
+        - 範例：「孩子這句話聽起來很衝，但其實是在說：『我也希望被信任』，對嗎？」
+        - 範例：「爸爸這麼生氣，是不是因為太擔心你會在外面受傷？」
     3. **破冰：** 只有在對話完全卡住時，才建議：「要不要試試看，現在給對方一個擁抱？」
     4. **禁止：** 不要素質教育、不要長篇大論。
     
