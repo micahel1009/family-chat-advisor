@@ -32,7 +32,6 @@
     <style>
         .chat-container-card { height: 500px; position: relative; overflow: hidden; }
         
-        /* 修正：聊天訊息區底部留白，避開變高的輸入框 */
         .chat-messages-area {
             position: absolute; top: 64px; left: 0; right: 0; 
             overflow-y: auto;
@@ -40,7 +39,6 @@
             bottom: calc(80px + env(safe-area-inset-bottom)); 
         }
 
-        /* 修正：輸入框底部增加安全距離 (Safe Area) */
         .chat-input-fixed {
             position: absolute; bottom: 0; left: 0; right: 0; 
             z-index: 40; 
@@ -65,7 +63,6 @@
             padding: 20px;
         }
 
-        /* --- 🧊 C階段新增：破冰遊戲專用動畫 --- */
         @keyframes popIn {
             0% { opacity: 0; transform: scale(0.8); }
             100% { opacity: 1; transform: scale(1); }
@@ -81,7 +78,6 @@
         }
         .animate-heartbeat { animation: heartbeat 2s infinite; }
         
-        /* 彩帶特效容器 */
         .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
     </style>
@@ -193,10 +189,6 @@
                 
                 <div class="chat-input-fixed bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-t">
                     <div class="flex items-end space-x-2">
-                        <button id="summonAIButton" class="w-10 h-10 md:w-12 md:h-12 bg-gray-100 dark:bg-gray-700 text-warm-orange rounded-full flex items-center justify-center hover:bg-orange-100 dark:hover:bg-gray-600 transition-colors flex-shrink-0" title="呼叫 AI 協調員幫忙翻譯" disabled>
-                            <i class="fas fa-wand-magic-sparkles"></i>
-                        </button>
-
                         <input type="text" id="userInput" placeholder="請先加入房間..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange outline-none text-base" disabled>
                         
                         <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0" disabled>
@@ -209,20 +201,16 @@
     </section>
 
     <div id="icebreakerOverlay" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center relative animate-pop-in border-4 border-warm-peach/30">
-            
             <div class="w-20 h-20 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-heartbeat">
                 <i class="fas fa-hand-holding-heart text-4xl text-white"></i>
             </div>
-
             <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">破冰任務：愛的擁抱</h3>
             <p class="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
                 AI 協調員偵測到大家都還是在乎彼此的。<br>
                 能不能先暫停一下爭執，<br>
                 <span class="text-warm-orange font-bold">給對方一個 3 秒鐘的擁抱？</span>
             </p>
-
             <div class="space-y-3">
                 <button id="confirmHugButton" class="w-full py-3.5 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
                     <i class="fas fa-check-circle mr-2"></i>我們擁抱了！
@@ -232,11 +220,10 @@
                 </button>
             </div>
         </div>
-        
         <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
     </div>
 
-    <script src="script.js?v=1000"></script>
+    <script src="script.js?v=9999"></script>
     
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
@@ -253,4 +240,3 @@
     </script>
 </body>
 </html>
-
