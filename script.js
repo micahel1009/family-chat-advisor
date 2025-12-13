@@ -331,7 +331,7 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
     `;
 
     try {
-        // ✅ 修正：改用 v1beta 端點，這才是 gemini-1.5-flash 的家
+        // ✅ 修正：改用 v1beta 端點 (解決 404 問題)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
