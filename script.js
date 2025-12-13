@@ -30,6 +30,9 @@ const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
 
+// 🪄 新增：主動召喚按鈕
+const summonAIButton = document.getElementById('summonAIButton');
+
 // 🧊 C階段新增：破冰遊戲 UI 元素
 const icebreakerOverlay = document.getElementById('icebreakerOverlay');
 const confirmHugButton = document.getElementById('confirmHugButton');
@@ -146,6 +149,9 @@ function updateUIForChat() {
     roomEntryScreen.style.display = 'none';
     userInput.disabled = false;
     sendButton.disabled = false;
+    // 🪄 啟用召喚按鈕
+    if (summonAIButton) summonAIButton.disabled = false;
+    
     leaveRoomButton.classList.remove('hidden');
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
@@ -329,29 +335,33 @@ async function checkAndTriggerAI(lastText) {
     }
 }
 
-// 🔥 改進點 2: 更溫暖、更具善意的 Prompt
-async function triggerAIPrompt(isEmergency) {
+// 🔥 改進點 2: 更溫暖的 Prompt + 支援主動召喚
+// 參數 isSummoned: 如果是 true，代表是用魔杖按鈕呼叫的
+async function triggerAIPrompt(isEmergency, isSummoned = false) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-    const prompt = `
-    你現在是「Re:Family」的家庭心理諮商師。你的任務不是評判對錯，而是**「說出對方心裡沒說出口的愛或擔憂」**。
-    
-    請分析以下對話，運用 **Satir (薩提爾) 冰山理論**：
-    1. **看見行為底下的渴望：** 憤怒通常伴隨著「受傷」或「擔心」；冷漠通常伴隨著「無力感」。
-    2. **翻譯善意：** 幫一方把「刺耳的話」翻譯成「背後的善意」給另一方聽。
-       - 例如：指責「你都很晚回家」 -> 翻譯「其實他是很想念你，希望能多點時間相處」。
-       - 例如：冷淡「隨便你」 -> 翻譯「他可能覺得無力，不知道該怎麼做才能讓你滿意」。
+    // 根據是否為主動召喚，微調角色設定
+    let intro = isSummoned 
+        ? "你現在被家人**主動邀請**出來協助。這代表他們卡住了，非常需要你的翻譯。" 
+        : "你現在是主動偵測到氣氛不對而介入的觀察者。";
 
+    const prompt = `
+    ${intro}
+    你現在是「Re:Family」的家庭心理諮商師。運用 **Satir 冰山理論**。
+    
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
+    **任務目標：**
+    1. **${isSummoned ? "回應求助：" : "看見渴望："}** ${isSummoned ? "有人按下了『魔法翻譯鈴』，請特別溫柔地以此開頭：「我看見有人舉手求助了...」或「既然大家希望我幫忙...」。" : "看見行為底下的受傷或擔心。"}
+    2. **翻譯善意：** 幫一方把「刺耳的話」翻譯成「背後的善意」。
+    
     **回應規則：**
-    1. **溫暖而精準：** 使用「其實...」、「聽起來...」、「或許...」這類柔和的開頭。
-    2. **字數限制：** 嚴格控制在 **50 字以內** (約 2-3 句話)。
-    3. **破冰行動 (關鍵)：** 當你判斷對話陷入僵局（例如雙方重複爭執），或者你認為「現在就是擁抱的好時機」時，請務必在回應的**最後面**加上 [TRIGGER_HUG] 標籤。系統偵測到後會彈出擁抱任務卡片。
-    4. **禁止：** 不要像機器人一樣說教，不要說「雙方都要冷靜」。
+    1. **字數限制：** 50 字以內。
+    2. **破冰行動：** 如果覺得僵局難解，結尾加上 [TRIGGER_HUG]。
+    3. **禁止：** 不要說教。
 
-    請給我一句能瞬間軟化雙方防衛機制的「翻譯」：
+    請給我一句具備洞察力的翻譯：
     `;
 
     try {
@@ -360,7 +370,6 @@ async function triggerAIPrompt(isEmergency) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // 🔥 允許稍微長一點的文字，讓 AI 完整表達
                 generationConfig: { temperature: 0.7, maxOutputTokens: 150 } 
             })
         });
@@ -425,3 +434,17 @@ sendButton.addEventListener('click', handleSendAction);
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
 });
+
+// 🪄 新增：主動召喚 AI 的監聽器
+if (summonAIButton) {
+    summonAIButton.addEventListener('click', async () => {
+        // 1. 視覺回饋
+        summonAIButton.classList.add('animate-spin');
+        
+        // 2. 強制觸發 AI (傳入 true 代表是「主動召喚」)
+        await triggerAIPrompt(false, true); 
+        
+        // 3. 恢復按鈕狀態
+        setTimeout(() => summonAIButton.classList.remove('animate-spin'), 1000);
+    });
+}
