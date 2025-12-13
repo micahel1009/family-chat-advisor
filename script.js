@@ -1,4 +1,4 @@
-// 🚨🚨🚨 請填入您剛剛測試成功的那把 API 金鑰 🚨🚨🚨
+// 🚨🚨🚨 請填入您剛剛測試成功的那把新 API 金鑰 🚨🚨🚨
 const GEMINI_API_KEY = "AIzaSyDq3IpGMbwKy7N4Dxo8NGl-YmJOJzGyUPQ";
 
 // Firebase 配置
@@ -29,6 +29,11 @@ const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
+
+// 🧊 破冰遊戲 UI 元素
+const icebreakerOverlay = document.getElementById('icebreakerOverlay');
+const confirmHugButton = document.getElementById('confirmHugButton');
+const confettiContainer = document.getElementById('confettiContainer');
 
 // 狀態變數
 let currentUserName = localStorage.getItem('chatUserName') || null;
@@ -213,6 +218,12 @@ function startChatListener(roomId) {
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
+                        if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_HUG]')) {
+                            if (Date.now() - msg.timestamp < 60000) {
+                                showIcebreakerModal();
+                            }
+                        }
+
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
                         if (msg.senderId !== 'AI') {
@@ -257,7 +268,7 @@ async function checkAndTriggerAI(lastText) {
     console.log("偵測關鍵字:", lastText, "是否命中:", hitKeyword);
 
     if (hitKeyword || conversationCount % 5 === 0) {
-        console.log("準備呼叫 AI (Gemini 2.0 Flash)...");
+        console.log("準備呼叫 AI (Gemini 1.5 Flash)...");
         await triggerAIPrompt(hitKeyword);
     }
 }
@@ -278,15 +289,16 @@ async function triggerAIPrompt(isEmergency) {
     
     **回應規則：**
     1. **字數限制：** 50 字以內。
-    2. **禁止：** 不要說教。
+    2. **破冰行動：** 如果覺得僵局難解，結尾加上 [TRIGGER_HUG]。
+    3. **禁止：** 不要說教。
 
     請給我一句具備洞察力的翻譯：
     `;
 
     try {
         console.log("正在發送 API 請求...");
-        // ✅ 終極修正：使用您的帳號支援的 gemini-2.0-flash
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        // ✅ 修正：改用 gemini-1.5-flash (免費額度最穩定)
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
