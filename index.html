@@ -64,6 +64,26 @@
             align-items: center; justify-content: center;
             padding: 20px;
         }
+
+        /* --- 🧊 C階段新增：破冰遊戲專用動畫 --- */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
+        .animate-heartbeat { animation: heartbeat 2s infinite; }
+        
+        /* 彩帶特效容器 */
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
     </style>
 </head>
 <body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300">
@@ -74,7 +94,7 @@
                 <div class="flex items-center space-x-2">                    
                     <i class="fas fa-heart text-2xl text-warm-orange"></i>                    
                     <span class="text-xl font-semibold bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">Re:Family</span>                
-                </div>                                
+                </div>                                    
                 <div class="hidden md:flex items-center space-x-8">                    
                     <a href="#home" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">首頁</a>                    
                     <a href="#chat" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">智能對話</a>                    
@@ -104,7 +124,7 @@
                     <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-400 leading-relaxed">                        
                         家庭溝通總是充滿誤解？Re:Family 智能助手在旁守護，即時化解情緒地雷，協助您將「指責」轉化為「需求」，重建親密連結。
                     </p>                
-                </div>                                
+                </div>                                    
                 
                 <div class="flex flex-wrap gap-4 items-center text-sm text-gray-500 dark:text-gray-400">                    
                     <div class="flex items-center space-x-2">                        
@@ -126,7 +146,7 @@
             <div class="relative">                
                 <div class="relative z-10">                    
                     <img src="./445329.jpg" alt="Re:Family 溝通調解概念圖" class="rounded-3xl shadow-2xl">                
-                </div>                                
+                </div>                                    
                 <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
                 <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
             </div>        
@@ -182,6 +202,34 @@
             </div>
         </div>
     </section>
+
+    <div id="icebreakerOverlay" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center relative animate-pop-in border-4 border-warm-peach/30">
+            
+            <div class="w-20 h-20 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-heartbeat">
+                <i class="fas fa-hand-holding-heart text-4xl text-white"></i>
+            </div>
+
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">破冰任務：愛的擁抱</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+                AI 協調員偵測到大家都還是在乎彼此的。<br>
+                能不能先暫停一下爭執，<br>
+                <span class="text-warm-orange font-bold">給對方一個 3 秒鐘的擁抱？</span>
+            </p>
+
+            <div class="space-y-3">
+                <button id="confirmHugButton" class="w-full py-3.5 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                    <i class="fas fa-check-circle mr-2"></i>我們擁抱了！
+                </button>
+                <button onclick="document.getElementById('icebreakerOverlay').classList.add('hidden')" class="w-full py-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-medium transition-colors">
+                    先不要，下次再說
+                </button>
+            </div>
+        </div>
+        
+        <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
+    </div>
 
     <script src="script.js"></script>
     
