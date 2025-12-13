@@ -1,4 +1,4 @@
-// 🚨🚨🚨 請填入您剛剛測試成功的那把新 API 金鑰 🚨🚨🚨
+// 🚨🚨🚨 請填入您正確的 API 金鑰 (AIza 開頭) 🚨🚨🚨
 const GEMINI_API_KEY = "AIzaSyDq3IpGMbwKy7N4Dxo8NGl-YmJOJzGyUPQ";
 
 // Firebase 配置
@@ -268,7 +268,7 @@ async function checkAndTriggerAI(lastText) {
     console.log("偵測關鍵字:", lastText, "是否命中:", hitKeyword);
 
     if (hitKeyword || conversationCount % 5 === 0) {
-        console.log("準備呼叫 AI (Gemini 1.5 Flash)...");
+        console.log("準備呼叫 AI (Gemini 2.0 Flash Experimental)...");
         await triggerAIPrompt(hitKeyword);
     }
 }
@@ -297,8 +297,8 @@ async function triggerAIPrompt(isEmergency) {
 
     try {
         console.log("正在發送 API 請求...");
-        // ✅ 修正：改用 gemini-1.5-flash (免費額度最穩定)
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        // ✅ 終極修正：改用 gemini-2.0-flash-exp (這是您菜單裡唯一的免費希望)
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
