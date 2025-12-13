@@ -331,9 +331,8 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
     `;
 
     try {
-        // ✅ 修正：改回 gemini-1.5-flash (這是正確且穩定的公開 API 名稱)
-        // 如果您想用實驗版 2.0，請改成 'gemini-2.0-flash-exp'
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        // ✅ 修正：改用 v1beta 端點，這才是 gemini-1.5-flash 的家
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -342,15 +341,9 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
             })
         });
         
-        // 檢查 HTTP 狀態
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`API 錯誤 (HTTP ${response.status}):`, errorText);
-            
-            if (response.status === 403) {
-                 // 這裡我們把錯誤印出來，方便您除錯，但不會讓網頁當掉
-                 console.warn("403 Forbidden: 請確認 1. API金鑰正確 2. Google Cloud 上已啟用 Generative Language API");
-            }
             return;
         }
 
