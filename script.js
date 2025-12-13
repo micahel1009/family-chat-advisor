@@ -1,5 +1,5 @@
 // 🚨🚨🚨 請填入您正確的 API 金鑰 (AIza 開頭) 🚨🚨🚨
-const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc"; 
+const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc";
 
 // Firebase 配置
 const firebaseConfig = {
@@ -39,16 +39,16 @@ const confirmHugButton = document.getElementById('confirmHugButton');
 const confettiContainer = document.getElementById('confettiContainer');
 
 // 狀態變數
-let currentUserName = localStorage.getItem('chatUserName') || null; 
+let currentUserName = localStorage.getItem('chatUserName') || null;
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
 let conversationHistory = [];
-let conversationCount = 0; 
-let lastAIMessageTime = 0; 
-let LAST_USER_SEND_TIME = 0; 
-const COOLDOWN_TIME = 10000; 
+let conversationCount = 0;
+let lastAIMessageTime = 0;
+let LAST_USER_SEND_TIME = 0;
+const COOLDOWN_TIME = 10000;
 
 // --- 功能：訪客自動清理 (Plan B) ---
 async function cleanupExpiredData(roomId) {
@@ -70,7 +70,7 @@ async function cleanupExpiredData(roomId) {
 
 // --- 房間進入邏輯 ---
 async function handleRoomEntry() {
-    const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
+    const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
     const password = roomPasswordInput.value.trim();
     const userName = userNameInput.value.trim();
 
@@ -84,7 +84,7 @@ async function handleRoomEntry() {
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
-        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
+        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
 
         if (doc.exists) {
             if (doc.data().password !== password) {
@@ -93,20 +93,20 @@ async function handleRoomEntry() {
                 return;
             }
             if (doc.data().active_users && doc.data().active_users.includes(userName)) {
-                 if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
-                      resetEntryButton();
-                      return;
-                 }
+                if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
+                    resetEntryButton();
+                    return;
+                }
             }
             await roomDocRef.update({
                 active_users: firebase.firestore.FieldValue.arrayUnion(userName),
-                expireAt: expireDate 
+                expireAt: expireDate
             });
         } else {
             await roomDocRef.set({
                 password: password,
                 created_at: firebase.firestore.FieldValue.serverTimestamp(),
-                expireAt: expireDate, 
+                expireAt: expireDate,
                 active_users: [userName]
             });
         }
@@ -115,7 +115,7 @@ async function handleRoomEntry() {
         currentUserName = userName;
         localStorage.setItem('chatRoomId', currentRoomId);
         localStorage.setItem('chatUserName', currentUserName);
-        
+
         cleanupExpiredData(currentRoomId);
         startChatListener(currentRoomId);
         updateUIForChat();
@@ -161,31 +161,31 @@ function displayMessage(content, type, senderName, timestamp) {
 
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
-    const cleanedContent = displayContent.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
+    const cleanedContent = displayContent.trim().replace(/\*/g, '').replace(/\n/g, '<br>');
 
-    messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
+    messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4');
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    
+
     let wrapperClass = type === 'user' ? 'items-end' : 'items-start';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
-    
+
     messageContainer.classList.add(type === 'user' ? 'justify-end' : 'justify-start');
     messageBubble.className = `p-4 rounded-2xl max-w-md ${bubbleClass}`;
 
     const headerHtml = `<div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div>`;
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${wrapperClass}`;
     wrapper.innerHTML = headerHtml;
-    
+
     messageBubble.innerHTML = cleanedContent;
     wrapper.appendChild(messageBubble);
-    
+
     if (type !== 'user') {
         const icon = document.createElement('div');
         icon.className = 'w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0';
         icon.innerHTML = senderName === 'Re:Family' ? '<i class="fas fa-heart text-white"></i>' : '<i class="fas fa-user text-gray-600"></i>';
-        if(senderName === 'Re:Family') icon.className = 'w-8 h-8 bg-warm-peach rounded-full flex items-center justify-center flex-shrink-0';
+        if (senderName === 'Re:Family') icon.className = 'w-8 h-8 bg-warm-peach rounded-full flex items-center justify-center flex-shrink-0';
         messageContainer.appendChild(icon);
         messageContainer.appendChild(wrapper);
     } else {
@@ -230,7 +230,7 @@ if (confirmHugButton) {
 }
 
 // --- Firestore 監聽 ---
-let displayedMessageIds = new Set(); 
+let displayedMessageIds = new Set();
 
 function startChatListener(roomId) {
     if (!db) return;
@@ -240,43 +240,43 @@ function startChatListener(roomId) {
     conversationCount = 0;
 
     db.collection('rooms').doc(roomId).collection('messages')
-      .orderBy('timestamp')
-      .limit(50)
-      .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-                const msg = change.doc.data();
-                if (!displayedMessageIds.has(change.doc.id)) {
-                    displayedMessageIds.add(change.doc.id);
-                    const isMe = msg.senderId === sessionId;
-                    const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
-                    
-                    if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_HUG]')) {
-                        if (Date.now() - msg.timestamp < 60000) {
-                            showIcebreakerModal();
+        .orderBy('timestamp')
+        .limit(50)
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const msg = change.doc.data();
+                    if (!displayedMessageIds.has(change.doc.id)) {
+                        displayedMessageIds.add(change.doc.id);
+                        const isMe = msg.senderId === sessionId;
+                        const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
+
+                        if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_HUG]')) {
+                            if (Date.now() - msg.timestamp < 60000) {
+                                showIcebreakerModal();
+                            }
+                        }
+
+                        displayMessage(msg.text, type, msg.senderName, msg.timestamp);
+
+                        if (msg.senderId !== 'AI') {
+                            conversationHistory.push({ role: 'user', text: `${msg.senderName}: ${msg.text}` });
+                            conversationCount++;
+                            if (isMe) checkAndTriggerAI(msg.text);
                         }
                     }
-
-                    displayMessage(msg.text, type, msg.senderName, msg.timestamp);
-
-                    if (msg.senderId !== 'AI') {
-                        conversationHistory.push({role: 'user', text: `${msg.senderName}: ${msg.text}`});
-                        conversationCount++;
-                        if (isMe) checkAndTriggerAI(msg.text);
-                    }
                 }
-            }
+            });
         });
-    });
 }
 
 async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
-    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
+    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
     await db.collection('rooms').doc(roomId).collection('messages').add({
-        text: text, 
-        senderId: senderId, 
-        senderName: senderName, 
+        text: text,
+        senderId: senderId,
+        senderName: senderName,
         timestamp: Date.now(),
         expireAt: expireDate
     });
@@ -285,19 +285,19 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
 // --- AI 觸發邏輯 ---
 async function checkAndTriggerAI(lastText) {
     const now = Date.now();
-    if (now - lastAIMessageTime < 8000) return; 
+    if (now - lastAIMessageTime < 8000) return;
     lastAIMessageTime = now;
 
     const triggers = [
-        "煩", "累", "生氣", "吵架", "兇", "控制", "管", "報備", "一直傳", 
+        "煩", "累", "生氣", "吵架", "兇", "控制", "管", "報備", "一直傳",
         "亂花錢", "浪費", "太貴", "省錢", "沒用", "閉嘴", "囉嗦", "不懂", "態度",
         "垃圾", "不想講", "隨便",
-        "每次", "總是", "從來", "根本", "幹嘛", "為什麼", "又是", 
+        "每次", "總是", "從來", "根本", "幹嘛", "為什麼", "又是",
         "聽我說", "受夠", "以為", "藉口", "理由", "呵呵", "..."
     ];
-    
+
     const hitKeyword = triggers.some(k => lastText.includes(k));
-    
+
     if (hitKeyword || conversationCount % 5 === 0) {
         await triggerAIPrompt(hitKeyword);
     }
@@ -307,8 +307,8 @@ async function checkAndTriggerAI(lastText) {
 async function triggerAIPrompt(isEmergency, isSummoned = false) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-    let intro = isSummoned 
-        ? "你現在被家人**主動邀請**出來協助。這代表他們卡住了，非常需要你的翻譯。" 
+    let intro = isSummoned
+        ? "你現在被家人**主動邀請**出來協助。這代表他們卡住了，非常需要你的翻譯。"
         : "你現在是主動偵測到氣氛不對而介入的觀察者。";
 
     const prompt = `
@@ -331,16 +331,15 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
     `;
 
     try {
-        // ✅ 修正：改用 v1beta 端點 (解決 404 問題)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 150 } 
+                generationConfig: { temperature: 0.7, maxOutputTokens: 150 }
             })
         });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`API 錯誤 (HTTP ${response.status}):`, errorText);
@@ -348,7 +347,7 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
         }
 
         const data = await response.json();
-        
+
         if (data.candidates && data.candidates.length > 0) {
             const aiText = data.candidates[0].content.parts[0].text;
             await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
@@ -389,7 +388,7 @@ function handleSendAction() {
     LAST_USER_SEND_TIME = now;
     sendToDatabase(userText, sessionId, currentUserName, currentRoomId);
     userInput.value = '';
-    
+
     updateInputState(COOLDOWN_TIME);
     const timer = setInterval(() => {
         const remaining = COOLDOWN_TIME - (Date.now() - LAST_USER_SEND_TIME);
@@ -409,7 +408,7 @@ userInput.addEventListener('keydown', (e) => {
 if (summonAIButton) {
     summonAIButton.addEventListener('click', async () => {
         summonAIButton.classList.add('animate-spin');
-        await triggerAIPrompt(false, true); 
+        await triggerAIPrompt(false, true);
         setTimeout(() => summonAIButton.classList.remove('animate-spin'), 1000);
     });
 }
