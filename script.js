@@ -30,9 +30,6 @@ const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
 
-// 🪄 主動召喚按鈕
-const summonAIButton = document.getElementById('summonAIButton');
-
 // 🧊 破冰遊戲 UI 元素
 const icebreakerOverlay = document.getElementById('icebreakerOverlay');
 const confirmHugButton = document.getElementById('confirmHugButton');
@@ -148,7 +145,6 @@ function updateUIForChat() {
     roomEntryScreen.style.display = 'none';
     userInput.disabled = false;
     sendButton.disabled = false;
-    if (summonAIButton) summonAIButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
@@ -298,28 +294,27 @@ async function checkAndTriggerAI(lastText) {
 
     const hitKeyword = triggers.some(k => lastText.includes(k));
 
+    // 除錯日誌：確認有跑到這裡
+    console.log("偵測關鍵字:", lastText, "是否命中:", hitKeyword);
+
     if (hitKeyword || conversationCount % 5 === 0) {
+        console.log("準備呼叫 AI...");
         await triggerAIPrompt(hitKeyword);
     }
 }
 
 // --- AI 回應 (核心 Prompt) ---
-async function triggerAIPrompt(isEmergency, isSummoned = false) {
+async function triggerAIPrompt(isEmergency) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-    let intro = isSummoned
-        ? "你現在被家人**主動邀請**出來協助。這代表他們卡住了，非常需要你的翻譯。"
-        : "你現在是主動偵測到氣氛不對而介入的觀察者。";
-
     const prompt = `
-    ${intro}
     你現在是「Re:Family」的家庭心理諮商師。運用 **Satir 冰山理論**。
     
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
     **任務目標：**
-    1. **${isSummoned ? "回應求助：" : "看見渴望："}** ${isSummoned ? "有人按下了『魔法翻譯鈴』，請特別溫柔地以此開頭：「我看見有人舉手求助了...」或「既然大家希望我幫忙...」。" : "看見行為底下的受傷或擔心。"}
+    1. **看見渴望：** 看見行為底下的受傷或擔心。
     2. **翻譯善意：** 幫一方把「刺耳的話」翻譯成「背後的善意」。
     
     **回應規則：**
@@ -331,7 +326,8 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
     `;
 
     try {
-        // ✅ 終極修正：換成最穩定的 gemini-pro 模型 (解決 404 問題)
+        console.log("正在發送 API 請求...");
+        // ✅ 修正：使用最穩定的 gemini-pro 模型 (v1beta)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -348,6 +344,7 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
         }
 
         const data = await response.json();
+        console.log("AI 回應成功:", data);
 
         if (data.candidates && data.candidates.length > 0) {
             const aiText = data.candidates[0].content.parts[0].text;
@@ -405,11 +402,3 @@ sendButton.addEventListener('click', handleSendAction);
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
 });
-
-if (summonAIButton) {
-    summonAIButton.addEventListener('click', async () => {
-        summonAIButton.classList.add('animate-spin');
-        await triggerAIPrompt(false, true);
-        setTimeout(() => summonAIButton.classList.remove('animate-spin'), 1000);
-    });
-}
