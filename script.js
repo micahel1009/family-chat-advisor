@@ -1,7 +1,7 @@
-// 🚨🚨🚨 請將下方的 "AIza..." 換成您在 Google Cloud 專案 1234 申請的那把正確金鑰 🚨🚨🚨
-const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc"; 
+// 🚨🚨🚨 請填入您正確的 API 金鑰 (AIza 開頭) 🚨🚨🚨
+const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc";
 
-// Firebase 配置 (保留您原本的設定)
+// Firebase 配置
 const firebaseConfig = {
     apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
     authDomain: "familychatadvisor.firebaseapp.com",
@@ -331,8 +331,8 @@ async function triggerAIPrompt(isEmergency, isSummoned = false) {
     `;
 
     try {
-        // ✅ 修正：使用 v1beta 端點，對應 gemini-1.5-flash
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        // ✅ 終極修正：換成最穩定的 gemini-pro 模型 (解決 404 問題)
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
