@@ -1,7 +1,7 @@
-// 🚨 1. 替換成您在 Google AI Studio 取得的 Gemini API 金鑰
+// 🚨 1. 請務必替換成您在 Google AI Studio 取得的 Gemini API 金鑰
 const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc"; 
 
-// 🚨 2. 替換成您在 Firebase Console 的配置 (必須填寫！)
+// 🚨 2. Firebase 配置 (已根據您提供的資料填寫)
 const firebaseConfig = {
     apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
     authDomain: "familychatadvisor.firebaseapp.com",
@@ -10,14 +10,14 @@ const firebaseConfig = {
     messagingSenderId: "172272099421",
     appId: "1:172272099421:web:a67b69291419194189edb4",
     measurementId: "G-SRY5B3JV85"
-  };
+};
 
 // 初始化 Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
 
-// DOM 元素
+// --- DOM 元素 (包含 C 階段新增的 UI) ---
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
@@ -29,6 +29,11 @@ const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
+
+// 🧊 C階段新增：破冰遊戲 UI 元素
+const icebreakerOverlay = document.getElementById('icebreakerOverlay');
+const confirmHugButton = document.getElementById('confirmHugButton');
+const confettiContainer = document.getElementById('confettiContainer');
 
 // 狀態變數
 let currentUserName = localStorage.getItem('chatUserName') || null; 
@@ -42,39 +47,25 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0; 
 const COOLDOWN_TIME = 10000; 
 
-// --- 新增功能：手動清理過期資料 (免信用卡方案) ---
+// --- 功能：訪客自動清理 (免信用卡方案) ---
 async function cleanupExpiredData(roomId) {
     console.log("正在檢查過期資料...");
     const now = new Date();
-
     try {
-        // 1. 清理過期訊息
         const messagesRef = db.collection('rooms').doc(roomId).collection('messages');
         const snapshot = await messagesRef.where('expireAt', '<', now).get();
-        
         if (!snapshot.empty) {
             const batch = db.batch();
-            snapshot.docs.forEach(doc => {
-                batch.delete(doc.ref);
-            });
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
             console.log(`已清理 ${snapshot.size} 則過期訊息`);
         }
-
-        // 2. 檢查房間是否過期 (如果是，順便清理房間設定)
-        const roomRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
-        const roomDoc = await roomRef.get();
-        if (roomDoc.exists && roomDoc.data().expireAt && roomDoc.data().expireAt.toDate() < now) {
-            // 這裡我們不刪除房間 metadata，避免正在用的人被踢出
-            // 只是作為一種檢查機制，真正刪除靠上面的訊息清理就夠了
-            console.log("房間已達過期標準");
-        }
     } catch (error) {
-        console.warn("清理過程遇到權限限制或錯誤 (可能是沒有過期資料):", error);
+        console.warn("清理過期資料略過 (可能是無權限或無資料):", error);
     }
 }
 
-// --- 房間與 UI 邏輯 ---
+// --- 1. 房間進入邏輯 ---
 
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, ''); 
@@ -91,9 +82,7 @@ async function handleRoomEntry() {
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
-
-        // 設定 5 天後過期
-        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 5天後過期
 
         if (doc.exists) {
             if (doc.data().password !== password) {
@@ -125,9 +114,7 @@ async function handleRoomEntry() {
         localStorage.setItem('chatRoomId', currentRoomId);
         localStorage.setItem('chatUserName', currentUserName);
         
-        // 🚨 關鍵：進入房間時，順手幫忙清理垃圾
-        cleanupExpiredData(currentRoomId);
-
+        cleanupExpiredData(currentRoomId); // 進房順便掃地
         startChatListener(currentRoomId);
         updateUIForChat();
 
@@ -165,10 +152,15 @@ function updateUIForChat() {
     displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
 }
 
+// --- 2. 訊息顯示 (包含破冰暗號過濾) ---
+
 function displayMessage(content, type, senderName, timestamp) {
+    // 🧊 C階段：過濾掉 AI 的暗號，不要顯示給使用者看
+    const displayContent = content.replace('[TRIGGER_HUG]', '');
+
     const messageContainer = document.createElement('div');
     const messageBubble = document.createElement('div');
-    const cleanedContent = content.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
+    const cleanedContent = displayContent.trim().replace(/\*/g, '').replace(/\n/g, '<br>'); 
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4'); 
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -208,7 +200,53 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- FIRESTORE & AI LOGIC ---
+// --- 3. 破冰遊戲邏輯 (C階段核心) ---
+
+// 顯示特效卡片
+function showIcebreakerModal() {
+    if (icebreakerOverlay) {
+        icebreakerOverlay.classList.remove('hidden');
+    }
+}
+
+// 撒花特效
+function triggerConfetti() {
+    if (!confettiContainer) return;
+    
+    confettiContainer.classList.remove('hidden');
+    const colors = ['#FF8A65', '#FFAB91', '#F8BBD9', '#81C784', '#ffffff'];
+    
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        confettiContainer.appendChild(confetti);
+        
+        // 動畫結束後移除元素
+        setTimeout(() => confetti.remove(), 5000);
+    }
+    // 5秒後隱藏容器
+    setTimeout(() => confettiContainer.classList.add('hidden'), 5000);
+}
+
+// 按下「我們擁抱了」按鈕
+if (confirmHugButton) {
+    confirmHugButton.addEventListener('click', () => {
+        // 1. 發送系統訊息
+        sendToDatabase("❤️ 我們已經完成擁抱了！(破冰成功)", sessionId, currentUserName, currentRoomId);
+        
+        // 2. 播放特效
+        triggerConfetti();
+        
+        // 3. 關閉卡片
+        icebreakerOverlay.classList.add('hidden');
+    });
+}
+
+// --- 4. Firestore 監聽與 AI 邏輯 ---
 
 let displayedMessageIds = new Set(); 
 
@@ -219,7 +257,6 @@ function startChatListener(roomId) {
     conversationHistory = [];
     conversationCount = 0;
 
-    // 監聽 'rooms/{roomId}/messages'
     db.collection('rooms').doc(roomId).collection('messages')
       .orderBy('timestamp')
       .limit(50)
@@ -232,6 +269,15 @@ function startChatListener(roomId) {
                     const isMe = msg.senderId === sessionId;
                     const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
                     
+                    // 🧊 C階段：偵測 AI 發出的暗號
+                    if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_HUG]')) {
+                        // 為了避免重新整理網頁時跳出舊的擁抱卡片，我們檢查時間
+                        // 只有 1 分鐘內的新訊息才觸發卡片
+                        if (Date.now() - msg.timestamp < 60000) {
+                            showIcebreakerModal();
+                        }
+                    }
+
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
                     if (msg.senderId !== 'AI') {
@@ -247,9 +293,7 @@ function startChatListener(roomId) {
 
 async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
-    
-    // 設定 5 天後過期
-    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 5天後過期
 
     await db.collection('rooms').doc(roomId).collection('messages').add({
         text: text, 
@@ -281,25 +325,24 @@ async function checkAndTriggerAI(lastText) {
 async function triggerAIPrompt(isEmergency) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
+    // 🧊 C階段：更新 Prompt，教導 AI 使用暗號
     const prompt = `
-    你現在是「Re:Family」家庭溝通協調員。你的角色是**敏銳的觀察者**與**文化翻譯官**。
-    請運用 **Satir (薩提爾) 模式** 與 **Bowen 理論**，協助家庭成員「翻譯」彼此的話語：
-    1. **關心 vs. 控制**：(翻譯：將父母的控制翻譯為焦慮，子女的反抗翻譯為求獨立)
-    2. **金錢價值觀**：(翻譯：將省錢翻譯為安全感，花錢翻譯為體驗)
-    3. **尊重與界線**：(翻譯：將建議翻譯為不被尊重)
+    你現在是「Re:Family」家庭溝通協調員。角色：**敏銳的觀察者**與**文化翻譯官**。
+    請運用 **Satir 模式** 與 **Bowen 理論**，協助家庭成員「翻譯」話語：
+    1. **關心 vs. 控制** (翻譯焦慮)
+    2. **金錢價值觀** (翻譯安全感/體驗)
+    3. **尊重與界線** (翻譯不被尊重)
 
     **當前對話紀錄：**
     ${conversationHistory.slice(-5).map(m => m.text).join('\n')}
 
-    **請嚴格遵守以下規則：**
-    1. **極簡短：** 回應絕對不能超過 2 句話 (約 40 字)。
-    2. **任務：** - **不要再安撫了，請直接「翻譯」！**
-        - 範例：「孩子這句話聽起來很衝，但其實是在說：『我也希望被信任』，對嗎？」
-        - 範例：「爸爸這麼生氣，是不是因為太擔心你會在外面受傷？」
-    3. **破冰：** 只有在對話完全卡住時，才建議：「要不要試試看，現在給對方一個擁抱？」
-    4. **禁止：** 不要素質教育、不要長篇大論。
+    **請嚴格遵守規則：**
+    1. **極簡短：** 回應不超過 2 句話 (40 字)。
+    2. **任務：** 不要安撫，請直接「翻譯」潛台詞。
+    3. **破冰行動 (關鍵)：** 當你判斷對話陷入僵局（例如雙方重複爭執），或者你認為「現在就是擁抱的好時機」時，請務必在回應的**最後面**加上 [TRIGGER_HUG] 這個標籤。系統偵測到後會彈出擁抱任務卡片。
+    4. **禁止：** 不要素質教育、長篇大論。
     
-    請生成一句具備洞察力的翻譯語句：
+    請生成一句具備洞察力的翻譯語句 (有需要時請包含標籤)：
     `;
 
     try {
@@ -308,7 +351,7 @@ async function triggerAIPrompt(isEmergency) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.6, maxOutputTokens: 100 } 
+                generationConfig: { temperature: 0.7, maxOutputTokens: 100 } 
             })
         });
         
