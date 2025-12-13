@@ -1,5 +1,5 @@
 // 🚨🚨🚨 請填入您正確的 API 金鑰 (AIza 開頭) 🚨🚨🚨
-const GEMINI_API_KEY = "AIzaSyAmCXDOyy2Ee-3R13JBZQPYg_pQpJjZASc";
+const GEMINI_API_KEY = "AIzaSyDq3IpGMbwKy7N4Dxo8NGl-YmJOJzGyUPQ";
 
 // Firebase 配置
 const firebaseConfig = {
@@ -29,11 +29,6 @@ const userNameInput = document.getElementById('userNameInput');
 const startChatButton = document.getElementById('startChatButton');
 const statusDisplay = document.getElementById('current-user-status');
 const leaveRoomButton = document.getElementById('leaveRoomButton');
-
-// 🧊 破冰遊戲 UI 元素
-const icebreakerOverlay = document.getElementById('icebreakerOverlay');
-const confirmHugButton = document.getElementById('confirmHugButton');
-const confettiContainer = document.getElementById('confettiContainer');
 
 // 狀態變數
 let currentUserName = localStorage.getItem('chatUserName') || null;
@@ -196,35 +191,6 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// --- 破冰遊戲邏輯 ---
-function showIcebreakerModal() {
-    if (icebreakerOverlay) icebreakerOverlay.classList.remove('hidden');
-}
-
-function triggerConfetti() {
-    if (!confettiContainer) return;
-    confettiContainer.classList.remove('hidden');
-    const colors = ['#FF8A65', '#FFAB91', '#F8BBD9', '#81C784', '#ffffff'];
-    for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confettiContainer.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 5000);
-    }
-    setTimeout(() => confettiContainer.classList.add('hidden'), 5000);
-}
-
-if (confirmHugButton) {
-    confirmHugButton.addEventListener('click', () => {
-        sendToDatabase("❤️ 我們已經完成擁抱了！(破冰成功)", sessionId, currentUserName, currentRoomId);
-        triggerConfetti();
-        icebreakerOverlay.classList.add('hidden');
-    });
-}
-
 // --- Firestore 監聽 ---
 let displayedMessageIds = new Set();
 
@@ -246,12 +212,6 @@ function startChatListener(roomId) {
                         displayedMessageIds.add(change.doc.id);
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
-
-                        if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_HUG]')) {
-                            if (Date.now() - msg.timestamp < 60000) {
-                                showIcebreakerModal();
-                            }
-                        }
 
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
@@ -294,11 +254,10 @@ async function checkAndTriggerAI(lastText) {
 
     const hitKeyword = triggers.some(k => lastText.includes(k));
 
-    // 除錯日誌：確認有跑到這裡
     console.log("偵測關鍵字:", lastText, "是否命中:", hitKeyword);
 
     if (hitKeyword || conversationCount % 5 === 0) {
-        console.log("準備呼叫 AI...");
+        console.log("準備呼叫 AI (Gemini 1.5 Flash)...");
         await triggerAIPrompt(hitKeyword);
     }
 }
@@ -319,16 +278,15 @@ async function triggerAIPrompt(isEmergency) {
     
     **回應規則：**
     1. **字數限制：** 50 字以內。
-    2. **破冰行動：** 如果覺得僵局難解，結尾加上 [TRIGGER_HUG]。
-    3. **禁止：** 不要說教。
+    2. **禁止：** 不要說教。
 
     請給我一句具備洞察力的翻譯：
     `;
 
     try {
         console.log("正在發送 API 請求...");
-        // ✅ 修正：使用最穩定的 gemini-pro 模型 (v1beta)
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        // ✅ 終極修正：同時使用 v1beta 和 gemini-1.5-flash
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
