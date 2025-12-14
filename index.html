@@ -58,7 +58,8 @@
             position: absolute; top: 0; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); 
             z-index: 50;
-            display: none; 
+            /* 👇 關鍵修正：這裡原本是 none，一定要改成 flex 才能顯示登入畫面 */
+            display: flex; 
             align-items: center; justify-content: center;
             padding: 20px;
         }
@@ -90,7 +91,7 @@
                 <div class="flex items-center space-x-2">                    
                     <i class="fas fa-heart text-2xl text-warm-orange"></i>                    
                     <span class="text-xl font-semibold bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">Re:Family</span>                
-                </div>                                    
+                </div>                                      
                 <div class="hidden md:flex items-center space-x-8">                    
                     <a href="#home" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">首頁</a>                    
                     <a href="#chat" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">智能對話</a>                    
@@ -120,7 +121,7 @@
                     <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-400 leading-relaxed">                        
                         家庭溝通總是充滿誤解？Re:Family 智能助手在旁守護，即時化解情緒地雷，協助您將「指責」轉化為「需求」，重建親密連結。
                     </p>                
-                </div>                                    
+                </div>                                      
                 
                 <div class="flex flex-wrap gap-4 items-center text-sm text-gray-500 dark:text-gray-400">                    
                     <div class="flex items-center space-x-2">                        
@@ -142,7 +143,7 @@
             <div class="relative">                
                 <div class="relative z-10">                    
                     <img src="./445329.jpg" alt="Re:Family 溝通調解概念圖" class="rounded-3xl shadow-2xl">                
-                </div>                                    
+                </div>                                      
                 <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
                 <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
             </div>        
@@ -176,14 +177,22 @@
                     </div>
                 </div>
 
-                <div id="roomEntryScreen" class="bg-white dark:bg-gray-800 rounded-b-3xl">
-                    <div class="max-w-xs mx-auto p-8 text-center">
-                        <h4 class="font-bold text-xl mb-4 text-warm-orange">🏠 加入家庭調解室</h4>
+                <div id="roomEntryScreen">
+                    <div class="max-w-xs mx-auto p-8 text-center w-full">
+                        <div class="w-16 h-16 bg-warm-orange rounded-full mx-auto flex items-center justify-center mb-4 shadow-lg">
+                            <i class="fas fa-door-open text-2xl text-white"></i>
+                        </div>
+                        <h4 class="font-bold text-xl mb-4 text-warm-orange">加入家庭調解室</h4>
                         <p class="text-sm text-gray-600 mb-6">請輸入房間代碼、密碼與您的暱稱。</p>
-                        <input type="text" id="roomIdInput" placeholder="房間代碼 (至少4碼)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
-                        <input type="password" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 mb-3 border rounded-lg focus:ring-warm-orange">
-                        <input type="text" id="userNameInput" placeholder="您的暱稱 (例: 爸爸)" class="w-full p-3 mb-4 border rounded-lg focus:ring-warm-orange">
-                        <button id="startChatButton" class="w-full px-4 py-3 bg-calm-blue text-white font-bold rounded-lg hover:bg-serene-green transition-colors">開始群聊</button>
+                        
+                        <div class="space-y-3">
+                            <input type="text" id="roomIdInput" placeholder="房間代碼 (例如: 1234)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
+                            <input type="text" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
+                            <input type="text" id="userNameInput" placeholder="您的暱稱 (例: 爸爸)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
+                            <button id="startChatButton" class="w-full px-4 py-3 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-lg hover:shadow-lg transform active:scale-95 transition-all">
+                                開始群聊
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -223,7 +232,7 @@
         <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
     </div>
 
-    <script src="script.js?v=5566"></script>
+    <script src="script.js?v=FIX_FINAL_LOGIN_V2"></script>
     
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
@@ -240,5 +249,3 @@
     </script>
 </body>
 </html>
-
-
