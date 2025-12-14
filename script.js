@@ -34,7 +34,7 @@ const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const loadingIndicator = document.getElementById('loadingIndicator');
-const roomEntryScreen = document.getElementById('roomEntryScreen');
+const roomEntryScreen = document.getElementById('roomEntryScreen'); // 這是登入畫面
 const roomIdInput = document.getElementById('roomIdInput');
 const roomPasswordInput = document.getElementById('roomPasswordInput');
 const userNameInput = document.getElementById('userNameInput');
@@ -53,17 +53,44 @@ let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
-let conversationHistory = []; // 儲存對話歷史，讓 AI 讀懂上下文
+let conversationHistory = []; 
 let conversationCount = 0;
 let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
-const COOLDOWN_TIME = 10000; // 發言冷卻時間
+const COOLDOWN_TIME = 3000; 
 
 // =================================================================
-// 🧹 功能：訪客自動清理 (保持資料庫整潔)
+// ⭐ 關鍵修復：網頁初始化邏輯 (確保登入畫面正確顯示)
+// =================================================================
+window.onload = function() {
+    console.log("系統初始化中...");
+    
+    // 檢查是否有登入紀錄
+    if (currentUserName && currentRoomId) {
+        console.log("偵測到登入紀錄，自動進入房間");
+        // 如果有登入，隱藏登入畫面，直接開始
+        if(roomEntryScreen) roomEntryScreen.style.display = 'none';
+        startChatListener(currentRoomId);
+        updateUIForChat();
+    } else {
+        console.log("無登入紀錄，顯示登入畫面");
+        // 如果沒登入，確保顯示登入畫面
+        if(roomEntryScreen) roomEntryScreen.style.display = 'flex';
+    }
+
+    // 重新綁定事件 (防止 HTML 覆蓋後失效)
+    if(startChatButton) startChatButton.addEventListener('click', handleRoomEntry);
+    if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
+    if(sendButton) sendButton.addEventListener('click', handleSendAction);
+    if(userInput) userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
+    });
+};
+
+// =================================================================
+// 🧹 功能：訪客自動清理
 // =================================================================
 async function cleanupExpiredData(roomId) {
-    console.log("系統檢查：正在清理過期訊息...");
     const now = new Date();
     try {
         const messagesRef = db.collection('rooms').doc(roomId).collection('messages');
@@ -72,7 +99,6 @@ async function cleanupExpiredData(roomId) {
             const batch = db.batch();
             snapshot.docs.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            console.log(`已清理 ${snapshot.size} 則過期訊息`);
         }
     } catch (error) {
         console.warn("清理略過:", error);
@@ -97,16 +123,14 @@ async function handleRoomEntry() {
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
-        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); // 房間有效期 5 天
+        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
-            // 驗證密碼
             if (doc.data().password !== password) {
                 alert("密碼錯誤！");
                 resetEntryButton();
                 return;
             }
-            // 避免暱稱重複
             if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                 if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
                     resetEntryButton();
@@ -118,7 +142,6 @@ async function handleRoomEntry() {
                 expireAt: expireDate
             });
         } else {
-            // 建立新房間
             await roomDocRef.set({
                 password: password,
                 created_at: firebase.firestore.FieldValue.serverTimestamp(),
@@ -149,7 +172,9 @@ function resetEntryButton() {
 }
 
 function updateUIForChat() {
-    roomEntryScreen.style.display = 'none';
+    // 隱藏登入遮罩
+    if(roomEntryScreen) roomEntryScreen.style.display = 'none';
+    
     userInput.disabled = false;
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
@@ -171,25 +196,14 @@ function updateInputState(remainingTime) {
 }
 
 // =================================================================
-// 💬 訊息顯示邏輯 (含防呆)
+// 💬 訊息顯示邏輯
 // =================================================================
 function displayMessage(content, type, senderName, timestamp) {
-    // 🛡️ 防呆：如果內容不是文字(例如是錯誤物件)，直接攔截不顯示
-    if (typeof content !== 'string') {
-        console.warn("攔截到非文字訊息，已隱藏:", content);
-        return; 
-    }
-
-    // 移除 AI 指令標籤，不讓使用者看到
+    if (typeof content !== 'string') return;
     const displayContent = content.replace('[TRIGGER_HUG]', '');
-    
-    // 如果移除標籤後是空的，就不顯示氣泡
     if (!displayContent.trim()) return;
 
     const messageContainer = document.createElement('div');
-    const messageBubble = document.createElement('div');
-    
-    // 處理換行
     const cleanedContent = displayContent.trim().replace(/\*/g, '').replace(/\n/g, '<br>');
 
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4');
@@ -199,22 +213,17 @@ function displayMessage(content, type, senderName, timestamp) {
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
 
     messageContainer.classList.add(type === 'user' ? 'justify-end' : 'justify-start');
-    messageBubble.className = `p-4 rounded-2xl max-w-md ${bubbleClass}`;
-
-    const headerHtml = `<div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div>`;
-
+    
+    // 構建氣泡
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${wrapperClass}`;
-    wrapper.innerHTML = headerHtml;
+    wrapper.innerHTML = `<div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div>
+                         <div class="p-4 rounded-2xl max-w-md ${bubbleClass}">${cleanedContent}</div>`;
 
-    messageBubble.innerHTML = cleanedContent;
-    wrapper.appendChild(messageBubble);
-
-    // 頭像邏輯
+    // 頭像
     const icon = document.createElement('div');
     icon.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0';
-    
-    if (senderName === 'Re:Family 智能助手' || senderName === 'Re:Family') {
+    if (senderName.includes('Re:Family') || senderName.includes('智能助手')) {
         icon.classList.add('bg-warm-peach');
         icon.innerHTML = '<i class="fas fa-heart text-white"></i>';
     } else {
@@ -235,7 +244,7 @@ function displayMessage(content, type, senderName, timestamp) {
 }
 
 // =================================================================
-// 🔥 Firestore 監聽 (核心：接收與觸發)
+// 🔥 Firestore 監聽
 // =================================================================
 let displayedMessageIds = new Set();
 
@@ -259,27 +268,16 @@ function startChatListener(roomId) {
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
-                        // 🔍 破冰遊戲觸發偵測
-                        // 只有當訊息來自 AI 且包含指令標籤，且在 1 分鐘內發送的才觸發
+                        // 破冰檢測
                         if (msg.senderId === 'AI' && msg.text && msg.text.includes('[TRIGGER_HUG]')) {
-                            if (Date.now() - msg.timestamp < 60000) {
-                                showIcebreakerModal();
-                            }
+                            if (Date.now() - msg.timestamp < 60000) showIcebreakerModal();
                         }
 
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
 
-                        // 📝 紀錄歷史並判斷是否需要 AI 介入
                         if (msg.senderId !== 'AI') {
-                            // 存入歷史紀錄 (包含是誰說的)
-                            conversationHistory.push({ 
-                                role: 'user', 
-                                name: msg.senderName, 
-                                text: msg.text 
-                            });
+                            conversationHistory.push({ role: 'user', name: msg.senderName, text: msg.text });
                             conversationCount++;
-                            
-                            // 只有我自己發送的訊息才負責觸發 AI，避免雙重呼叫
                             if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
                         }
                     }
@@ -289,26 +287,18 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (觸發判斷與呼叫)
+// 🧠 AI 腦袋 (薩提爾翻譯官)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
-    // 避免 AI 太頻繁插嘴 (8秒冷卻)
     if (now - lastAIMessageTime < 8000) return;
-    
-    // 關鍵字庫：包含負面情緒、指責、推卸責任等詞彙
-    const triggers = [
-        "煩", "累", "生氣", "吵架", "兇", "控制", "管", "報備", "一直傳",
-        "亂花錢", "浪費", "太貴", "省錢", "沒用", "閉嘴", "囉嗦", "不懂", "態度",
-        "垃圾", "不想講", "隨便", "反正", "都你", "藉口", "理由", "呵呵", "...", 
-        "不聽話", "沒救", "受夠"
-    ];
+
+    const triggers = ["煩", "累", "生氣", "吵架", "兇", "控制", "管", "報備", "一直傳", "亂花錢", "浪費", "太貴", "省錢", "沒用", "閉嘴", "囉嗦", "不懂", "態度", "垃圾", "不想講", "隨便", "反正", "都你", "藉口", "理由", "呵呵", "...", "不聽話", "沒救", "受夠"];
 
     const hitKeyword = triggers.some(k => lastText.includes(k));
 
     console.log(`偵測: "${lastText}" | 命中關鍵字: ${hitKeyword}`);
 
-    // 規則：命中關鍵字 OR 每 5 句話主動關心一次
     if (hitKeyword || conversationCount % 5 === 0) {
         lastAIMessageTime = now;
         console.log("🚀 準備呼叫 Gemini 2.5 Flash 進行翻譯...");
@@ -316,16 +306,11 @@ async function checkAndTriggerAI(lastText, senderName) {
     }
 }
 
-// =================================================================
-// 🤖 核心 Prompt (薩提爾翻譯官)
-// =================================================================
 async function triggerAIPrompt(isEmergency, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
 
-    // 將最近 5 則對話組合成字串，讓 AI 讀懂前因後果
     const historyText = conversationHistory.slice(-5).map(m => `${m.name}: ${m.text}`).join('\n');
 
-    // ✨ 這裡是最重要的部分：定義 AI 的人格與任務 ✨
     const prompt = `
     你現在是「Re:Family」的家庭溝通協調員，你的核心角色是運用 **Satir 冰山理論** 的「翻譯官」。
     你的任務**絕對不是說教**，而是協助家人將「刺耳的指責」翻譯成「冰山底下隱藏的渴望與愛」。
@@ -351,40 +336,30 @@ async function triggerAIPrompt(isEmergency, lastText, senderName) {
     `;
 
     try {
-        // 🚀 使用 gemini-2.5-flash (目前最穩定且免費額度較高的版本)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 字數大解鎖：設定為 800，確保翻譯不被截斷
+                // ✅ 字數大解鎖：設定為 800
                 generationConfig: { temperature: 0.7, maxOutputTokens: 800 } 
             })
         });
 
-        // 🚨 錯誤攔截：如果 API 失敗 (例如金鑰又被鎖)，在此攔截，不讓它傳到聊天室
         if (!response.ok) {
             const errorData = await response.json();
             console.error("API 呼叫失敗:", errorData);
-            
-            if(errorData.error && errorData.error.status === 'PERMISSION_DENIED') {
-                alert("⚠️ 系統警告：Google 偵測到金鑰異常。請更換金鑰！");
-            }
-            return; // 直接結束，不往下執行
+            return; 
         }
 
         const data = await response.json();
-        
         if (data.candidates && data.candidates.length > 0) {
             const aiText = data.candidates[0].content.parts[0].text;
             console.log("AI 回應成功:", aiText);
-            
-            // 再次確認是文字才發送
             if (typeof aiText === 'string') {
                  await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
             }
         }
-
     } catch (e) {
         console.error("網路連線錯誤:", e);
     } finally {
@@ -392,9 +367,7 @@ async function triggerAIPrompt(isEmergency, lastText, senderName) {
     }
 }
 
-// =================================================================
-// 🎮 破冰遊戲與發送邏輯
-// =================================================================
+// 破冰遊戲
 function showIcebreakerModal() { 
     if (icebreakerOverlay) icebreakerOverlay.classList.remove('hidden'); 
 }
@@ -402,8 +375,6 @@ function showIcebreakerModal() {
 if (confirmHugButton) {
     confirmHugButton.addEventListener('click', () => {
         sendToDatabase("❤️ 我們已經完成擁抱了！(破冰成功)", sessionId, currentUserName, currentRoomId);
-        
-        // 彩帶特效
         if(confettiContainer) {
             confettiContainer.classList.remove('hidden');
             const colors = ['#FF8A65', '#FFAB91', '#F8BBD9', '#81C784', '#ffffff'];
@@ -425,8 +396,6 @@ if (confirmHugButton) {
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !userText) return;
-    
-    // 防止洗版 (前端冷卻)
     const now = Date.now();
     if (now - LAST_USER_SEND_TIME < COOLDOWN_TIME) return;
 
@@ -454,11 +423,8 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
     const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
     await db.collection('rooms').doc(roomId).collection('messages').add({
-        text: text,
-        senderId: senderId,
-        senderName: senderName,
-        timestamp: Date.now(),
-        expireAt: expireDate
+        text: text, senderId: senderId, senderName: senderName,
+        timestamp: Date.now(), expireAt: expireDate
     });
 }
 
