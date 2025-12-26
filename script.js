@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】請填入您的新金鑰 (請務必切成兩半) 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCwVW"; 
-const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
+const KEY_PART_1 = "AIzaSyCwVW"; // 請換回您原本的
+const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0"; // 請換回您原本的
 const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
@@ -99,7 +99,7 @@ window.onload = function() {
 };
 
 // =================================================================
-// ❄️ 冷場偵測邏輯 (已修改為 60 秒)
+// ❄️ 冷場偵測邏輯 (60秒)
 // =================================================================
 function checkIdleAndTriggerPledge() {
     // 只有在已登入且視窗未顯示時才檢查
@@ -107,7 +107,7 @@ function checkIdleAndTriggerPledge() {
 
     const idleTime = Date.now() - lastRoomActivityTime;
     
-    // ⭐ 修改：如果超過 60 秒沒有新訊息 (60000 毫秒)
+    // 如果超過 60 秒沒有新訊息 (60000 毫秒)
     if (idleTime > 60000) {
         console.log("偵測到冷場超過 60 秒，自動觸發破冰！");
         showPledgeModal();
@@ -204,8 +204,6 @@ function updateUIForChat() {
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
     displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
-    
-    // 初始化計時器
     lastRoomActivityTime = Date.now();
 }
 
@@ -296,11 +294,13 @@ function startChatListener(roomId) {
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
-                        // 🔍 偵測 AI 發出的破冰指令
+                        // 🔍 偵測 AI 發出的破冰指令 (確保不急著彈出，延遲一下)
                         if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) {
-                            if (Date.now() - msg.timestamp < 60000) {
-                                showPledgeModal();
-                            }
+                            setTimeout(() => {
+                                if (Date.now() - msg.timestamp < 60000) {
+                                    showPledgeModal();
+                                }
+                            }, 1000);
                         }
 
                         // 🔍 偵測是否有使用者發出 "宣誓"
@@ -325,7 +325,7 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (升級版)
+// 🧠 AI 腦袋 (升級版：2500 Tokens + 禁語)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
@@ -364,6 +364,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     let prompt = "";
 
     if (mode === "summary") {
+        // ⭐ 雙向總結模式
         prompt = `
         你現在是「Re:Family」的資深家庭調解員。
         
@@ -374,20 +375,21 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         請**總結雙方目前的心聲**，轉化成 100 到 250 字之間的溫暖解析。
         
         **⛔ 絕對禁止：**
-        1. 不要在回應中提到「Satir」、「薩提爾」、「冰山理論」等名詞。直接像個真人一樣說話。
+        1. 不准出現「Satir」、「薩提爾」、「冰山理論」等專業名詞。
         2. 不要說教。
         
         **解析架構：**
         1. **${senderName} (當事人) 的心聲：** 他表面上在爭執，但內心渴望的是什麼？（如：想被當成大人）。
         2. **對方的善意：** 對方行為背後隱藏的善意或擔憂是什麼？（如：怕孩子受傷）。
         
-        **3. 行動呼籲 (非常重要)：**
+        **3. 行動呼籲 (重要)：**
         總結完後，請務必明確告訴雙方：『如果想緩解一下，請輸入：我希望破冰，打破我們之間的隔閡!』
         
         **最後指令：**
         請在回應的最後面，務必加上標籤 [TRIGGER_PLEDGE] 以啟動系統功能。
         `;
     } else {
+        // ⭐ 一般翻譯模式
         prompt = `
         你現在是「Re:Family」的家庭溝通翻譯官。
         
@@ -399,7 +401,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         例如：將「你真的很不聽話」翻譯成「其實是因為我很擔心你的安全」。
         
         **⛔ 絕對禁止：**
-        1. 不准提到「薩提爾」、「冰山理論」。
+        1. 不准出現「薩提爾」、「冰山理論」。
         2. 不要說「根據理論」。
         
         **限制：** 100字以內，語氣溫柔。
@@ -412,7 +414,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 關鍵修正：字數上限拉高到 2500，保證不截斷，讓 [TRIGGER_PLEDGE] 能被印出來
+                // ✅ 2500 tokens 保證不截斷
                 generationConfig: { temperature: 0.7, maxOutputTokens: 2500 } 
             })
         });
@@ -436,7 +438,6 @@ async function triggerSuccessAI() {
     const successMsg = "謝謝你們體諒彼此，一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
     await sendToDatabase(successMsg, 'AI', 'Re:Family 智能助手', currentRoomId);
     
-    // 撒花
     if(confettiContainer) {
         confettiContainer.classList.remove('hidden');
         for(let i=0; i<100; i++) {
