@@ -6,6 +6,7 @@
     <title>Re:Family - 溫暖家庭溝通平台</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     
@@ -55,7 +56,7 @@
             position: absolute; top: 0; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); 
             z-index: 50;
-            display: flex; 
+            display: flex; /* 確保預設顯示 */
             align-items: center; justify-content: center;
             padding: 20px;
         }
@@ -85,6 +86,7 @@
                 <div class="hidden md:flex items-center space-x-8">                    
                     <a href="#home" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">首頁</a>                    
                     <a href="#chat" class="text-gray-700 dark:text-gray-300 hover:text-warm-orange transition-colors">智能對話</a>                    
+                    
                     <button id="leaveRoomButton" class="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors hidden">
                         切換房間
                     </button>
@@ -111,12 +113,22 @@
                         家庭溝通總是充滿誤解？Re:Family 智能助手在旁守護，即時化解情緒地雷，協助您將「指責」轉化為「需求」，重建親密連結。
                     </p>                
                 </div>                                      
+                
                 <div class="flex flex-wrap gap-4 items-center text-sm text-gray-500 dark:text-gray-400">                    
-                    <div class="flex items-center space-x-2"><i class="fas fa-user-secret text-warm-orange"></i><span>隱私保護設計</span></div>
+                    <div class="flex items-center space-x-2">                        
+                        <i class="fas fa-user-secret text-warm-orange"></i>
+                        <span>隱私保護設計</span>                    
+                    </div>
                     <span class="hidden sm:inline text-gray-300">|</span>
-                    <div class="flex items-center space-x-2"><i class="fas fa-handshake text-warm-orange"></i><span>即時衝突調解</span></div>
+                    <div class="flex items-center space-x-2">                        
+                        <i class="fas fa-handshake text-warm-orange"></i>                        
+                        <span>即時衝突調解</span>                    
+                    </div>
                     <span class="hidden sm:inline text-gray-300">|</span>
-                    <div class="flex items-center space-x-2"><i class="fas fa-home text-warm-orange"></i><span>隨時隨地的避風港</span></div>                
+                    <div class="flex items-center space-x-2">                        
+                        <i class="fas fa-home text-warm-orange"></i>                        
+                        <span>隨時隨地的避風港</span>                    
+                    </div>                
                 </div>            
             </div>
             <div class="relative">                
@@ -129,6 +141,12 @@
 
     <section id="chat" class="py-20">        
         <div class="max-w-4xl mx-auto px-6 lg:px-8">            
+            <div class="text-center mb-16">                
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">                    
+                    <span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span>                
+                </h2>                
+            </div>
+            
             <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl chat-container-card" id="chat-widget-container">
                 <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center">
                     <div class="flex items-center space-x-3">
@@ -154,6 +172,8 @@
                             <i class="fas fa-door-open text-2xl text-white"></i>
                         </div>
                         <h4 class="font-bold text-xl mb-4 text-warm-orange">加入家庭調解室</h4>
+                        <p class="text-sm text-gray-600 mb-6">請輸入房間代碼、密碼與您的暱稱。</p>
+                        
                         <div class="space-y-3">
                             <input type="text" id="roomIdInput" placeholder="房間代碼 (例如: 1234)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
                             <input type="text" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
@@ -168,6 +188,7 @@
                 <div class="chat-input-fixed bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 shadow-t">
                     <div class="flex items-end space-x-2">
                         <input type="text" id="userInput" placeholder="請先加入房間..." class="flex-grow p-3 md:p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-warm-orange outline-none text-base" disabled>
+                        
                         <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0" disabled>
                             <i class="fas fa-paper-plane text-sm md:text-base"></i>
                         </button>
@@ -207,7 +228,7 @@
         <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
     </div>
 
-    <script src="script.js?v=AI_20SEC_IDLE_FIX"></script>
+    <script src="script.js?v=AI_FINAL_V3"></script>
     
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
