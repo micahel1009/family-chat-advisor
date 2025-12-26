@@ -99,7 +99,7 @@ window.onload = function() {
 };
 
 // =================================================================
-// ❄️ 冷場偵測邏輯
+// ❄️ 冷場偵測邏輯 (已修改為 60 秒)
 // =================================================================
 function checkIdleAndTriggerPledge() {
     // 只有在已登入且視窗未顯示時才檢查
@@ -107,9 +107,9 @@ function checkIdleAndTriggerPledge() {
 
     const idleTime = Date.now() - lastRoomActivityTime;
     
-    // 如果超過 20 秒沒有新訊息
-    if (idleTime > 20000) {
-        console.log("偵測到冷場超過 20 秒，自動觸發破冰！");
+    // ⭐ 修改：如果超過 60 秒沒有新訊息 (60000 毫秒)
+    if (idleTime > 60000) {
+        console.log("偵測到冷場超過 60 秒，自動觸發破冰！");
         showPledgeModal();
     }
 }
@@ -298,7 +298,6 @@ function startChatListener(roomId) {
 
                         // 🔍 偵測 AI 發出的破冰指令
                         if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) {
-                            // 只在最近 1 分鐘內的訊息才彈出
                             if (Date.now() - msg.timestamp < 60000) {
                                 showPledgeModal();
                             }
