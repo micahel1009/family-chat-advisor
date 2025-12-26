@@ -135,6 +135,8 @@
                 <div class="relative z-10">                    
                     <img src="./445329.jpg" alt="Re:Family 溝通調解概念圖" class="rounded-3xl shadow-2xl" onerror="this.style.display='none'">                
                 </div>                                      
+                <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
+                <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
             </div>        
         </div>
     </section>
@@ -200,27 +202,30 @@
 
     <div id="pledgeModal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center relative animate-pop-in border-4 border-warm-peach/30">
-            <div class="w-20 h-20 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <i class="fas fa-handshake text-4xl text-white"></i>
+            
+            <div class="w-24 h-24 bg-gradient-to-b from-warm-peach to-pink-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                <i class="fas fa-handshake text-5xl text-white"></i>
             </div>
-            <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">打破隔閡的關鍵時刻</h3>
-            <p class="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed text-sm">
+
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2 tracking-wide">打破隔閡的關鍵時刻</h3>
+            
+            <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed text-sm">
                 大家說出心裡話很不容易了，希望大家可以經過這次短暫的對話更了解彼此。<br>
                 請在下方輸入約定語句：
             </p>
             
-            <div class="bg-orange-50 dark:bg-gray-700 p-3 rounded-lg mb-4 text-warm-orange font-bold text-sm tracking-wide select-all">
+            <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl mb-4 text-warm-orange font-bold text-base tracking-wide select-all border border-orange-100">
                 我希望破冰，打破我們之間的隔閡!
             </div>
 
             <input type="text" id="pledgeInput" placeholder="請在此輸入上方語句..." 
-                   class="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-warm-orange focus:outline-none mb-4 text-center dark:bg-gray-700 dark:text-white">
+                   class="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-warm-orange focus:outline-none mb-4 text-center text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-700">
 
             <div class="space-y-3">
-                <button id="submitPledgeButton" class="w-full py-3.5 bg-gray-300 text-white font-bold rounded-xl cursor-not-allowed transition-all" disabled>
+                <button id="submitPledgeButton" class="w-full py-3.5 bg-gray-300 text-white font-bold rounded-xl cursor-not-allowed transition-all shadow-md" disabled>
                     <i class="fas fa-paper-plane mr-2"></i>確認送出
                 </button>
-                <button onclick="document.getElementById('pledgeModal').classList.add('hidden')" class="w-full py-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-medium transition-colors">
+                <button onclick="document.getElementById('pledgeModal').classList.add('hidden')" class="w-full py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-medium transition-colors">
                     暫時跳過
                 </button>
             </div>
@@ -228,7 +233,7 @@
         <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
     </div>
 
-    <script src="script.js?v=AI_FINAL_V3"></script>
+    <script src="script.js?v=FINAL_FULL_CODE_FIX_01"></script>
     
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
