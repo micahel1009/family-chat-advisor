@@ -51,8 +51,11 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
+// ⭐ 新增：全域閒置計時器 (記錄聊天室最後一句話的時間)
+let lastRoomActivityTime = Date.now(); 
+
 // =================================================================
-// ⭐ 初始化邏輯 (登入畫面修復)
+// ⭐ 初始化邏輯
 // =================================================================
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -90,7 +93,26 @@ window.onload = function() {
     if (submitPledgeButton) {
         submitPledgeButton.addEventListener('click', handlePledgeSubmit);
     }
+
+    // ⭐ 啟動冷場偵測器 (每 5 秒檢查一次)
+    setInterval(checkIdleAndTriggerPledge, 5000);
 };
+
+// =================================================================
+// ❄️ 冷場偵測邏輯
+// =================================================================
+function checkIdleAndTriggerPledge() {
+    // 只有在已登入且視窗未顯示時才檢查
+    if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
+
+    const idleTime = Date.now() - lastRoomActivityTime;
+    
+    // 如果超過 20 秒沒有新訊息 (20000 毫秒)
+    if (idleTime > 20000) {
+        console.log("偵測到冷場超過 20 秒，自動觸發破冰！");
+        showPledgeModal();
+    }
+}
 
 // =================================================================
 // 🧹 訪客清理
@@ -182,6 +204,9 @@ function updateUIForChat() {
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
     displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
+    
+    // 初始化計時器
+    lastRoomActivityTime = Date.now();
 }
 
 // =================================================================
@@ -245,7 +270,7 @@ function displayMessage(content, type, senderName, timestamp) {
 // 🔥 Firestore 監聽 (含破冰邏輯)
 // =================================================================
 let displayedMessageIds = new Set();
-let pledgeCount = 0; // 計算有多少人宣誓了
+let pledgeCount = 0; 
 
 function startChatListener(roomId) {
     if (!db) return;
@@ -265,6 +290,9 @@ function startChatListener(roomId) {
                     if (!displayedMessageIds.has(change.doc.id)) {
                         displayedMessageIds.add(change.doc.id);
                         
+                        // ⭐ 收到任何新訊息，都更新活動時間 (重置冷場計時器)
+                        lastRoomActivityTime = Date.now();
+
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
@@ -278,7 +306,6 @@ function startChatListener(roomId) {
                         // 🔍 偵測是否有使用者發出 "宣誓"
                         if (msg.text.includes("我希望破冰，打破我們之間的隔閡!")) {
                             pledgeCount++;
-                            // 如果有 2 個人宣誓了，且我是其中一個觸發者，稍微延遲後觸發 AI 慶祝
                             if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000) {
                                 if (isMe) triggerSuccessAI();
                             }
@@ -298,14 +325,19 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (升級版：含雙向總結)
+// 🧠 AI 腦袋 (升級版)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
 
+    // 1. 一般負面觸發
     const generalTriggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "態度", "閉嘴", "垃圾", "理由", "藉口"];
+    
+    // 2. 深度需求 (渴望被理解)
     const deepNeedsTriggers = ["當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"];
+    
+    // 3. 僵局/內耗 (Burnout)
     const deadlockTriggers = ["內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累"];
 
     const isGeneral = generalTriggers.some(k => lastText.includes(k));
@@ -332,28 +364,26 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     let prompt = "";
 
     if (mode === "summary") {
-        // ⭐ 雙向總結模式 (含您的提醒)
         prompt = `
-        你現在是「Re:Family」的資深家庭調解員。
+        你現在是「Re:Family」的資深家庭調解員。監測到對話進入了關鍵時刻（出現了深度需求表達或溝通僵局）。
         
         **對話紀錄：**
         ${historyText}
 
         **任務：**
-        請**總結雙方目前的心聲**，轉化成 100 到 250 字之間的溫暖解析。
+        請不要只翻譯最後一句話。請**總結雙方目前的心聲**，轉化成 100 到 250 字之間的溫暖解析。
         
         **解析架構：**
-        1. **${senderName} 的心聲：** 他表面上在爭執，但內心渴望的是什麼？（如：想被當成大人）。
-        2. **對方的善意：** 對方行為背後隱藏的善意或擔憂是什麼？（如：怕孩子受傷）。
+        1. **${senderName} (當事人) 的心聲：** 他表面上在爭執，但內心渴望的是什麼？（例如：想被當成大人、想被信任）。
+        2. **對方的心聲：** 對方之前的行為，其實背後隱藏的善意或擔憂是什麼？（例如：怕孩子受傷、想參與孩子的生活）。
         
-        **3. 行動呼籲 (非常重要)：**
+        **3. 行動呼籲 (重要)：**
         總結完後，請務必明確告訴雙方：『如果想緩解一下，請輸入：我希望破冰，打破我們之間的隔閡!』
         
         **最後指令：**
         請在回應的最後面，務必加上標籤 [TRIGGER_PLEDGE] 以啟動系統功能。
         `;
     } else {
-        // ⭐ 一般翻譯模式
         prompt = `
         你現在是「Re:Family」的家庭溝通翻譯官。運用 Satir 冰山理論。
         
@@ -363,6 +393,8 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         **任務：**
         將這句可能帶有情緒的話，翻譯成「背後的善意與擔心」。
         例如：將「你真的很不聽話」翻譯成「其實是因為我很擔心你的安全」。
+        
+        **限制：** 100字以內，語氣溫柔。
         `;
     }
 
@@ -372,7 +404,6 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 1500 tokens 確保長篇總結不截斷
                 generationConfig: { temperature: 0.7, maxOutputTokens: 1500 } 
             })
         });
@@ -430,6 +461,9 @@ function handlePledgeSubmit() {
     
     // 關閉視窗
     if (pledgeModal) pledgeModal.classList.add('hidden');
+    
+    // 重置活動時間，避免馬上又觸發
+    lastRoomActivityTime = Date.now();
 }
 
 // =================================================================
