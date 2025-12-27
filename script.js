@@ -66,7 +66,6 @@ window.onload = function() {
         if(roomEntryScreen) roomEntryScreen.style.display = 'flex';
     }
 
-    // 綁定事件
     if(startChatButton) startChatButton.addEventListener('click', handleRoomEntry);
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
@@ -74,7 +73,7 @@ window.onload = function() {
         if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
     });
 
-    // 破冰輸入框監聽 (確保如果使用者刪除文字，按鈕會變回灰色)
+    // 破冰輸入框監聽
     if (pledgeInput) {
         pledgeInput.addEventListener('input', (e) => {
             const targetText = "我希望破冰，打破我們之間的隔閡!";
@@ -100,13 +99,9 @@ window.onload = function() {
 // ❄️ 冷場偵測邏輯 (60秒)
 // =================================================================
 function checkIdleAndTriggerPledge() {
-    // 只有在已登入且視窗未顯示時才檢查
     if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
-
     const idleTime = Date.now() - lastRoomActivityTime;
-    
-    // 如果超過 60 秒沒有新訊息 (60000 毫秒)
-    if (idleTime > 60000) {
+    if (idleTime > 60000) { 
         console.log("偵測到冷場超過 60 秒，自動觸發破冰！");
         showPledgeModal();
     }
@@ -206,12 +201,12 @@ function updateUIForChat() {
 }
 
 // =================================================================
-// 💬 訊息顯示邏輯 (含破冰觸發邏輯)
+// 💬 訊息顯示邏輯
 // =================================================================
 function displayMessage(content, type, senderName, timestamp) {
     if (typeof content !== 'string') return;
     
-    // 隱藏指令標籤 (確保不顯示出來)
+    // 隱藏指令標籤
     const displayContent = content
         .replace('[TRIGGER_PLEDGE]', '')
         .replace('[AI_SUCCESS_REPLY]', ''); 
@@ -227,7 +222,6 @@ function displayMessage(content, type, senderName, timestamp) {
     let wrapperClass = type === 'user' ? 'items-end' : 'items-start';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
 
-    // 特殊系統訊息樣式 (破冰宣言)
     if (content.includes("已宣誓破冰")) {
         bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
     }
@@ -263,7 +257,7 @@ function displayMessage(content, type, senderName, timestamp) {
 }
 
 // =================================================================
-// 🔥 Firestore 監聽 (含破冰邏輯)
+// 🔥 Firestore 監聽
 // =================================================================
 let displayedMessageIds = new Set();
 let pledgeCount = 0; 
@@ -285,14 +279,12 @@ function startChatListener(roomId) {
                     const msg = change.doc.data();
                     if (!displayedMessageIds.has(change.doc.id)) {
                         displayedMessageIds.add(change.doc.id);
-                        
-                        // ⭐ 收到任何新訊息，都更新活動時間 (重置冷場計時器)
                         lastRoomActivityTime = Date.now();
 
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
-                        // 🔍 偵測 AI 發出的破冰指令 (確保不急著彈出，延遲一下)
+                        // 偵測 AI 發出的破冰指令 (延遲觸發)
                         if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) {
                             setTimeout(() => {
                                 if (Date.now() - msg.timestamp < 60000) {
@@ -301,7 +293,6 @@ function startChatListener(roomId) {
                             }, 1000);
                         }
 
-                        // 🔍 偵測是否有使用者發出 "宣誓"
                         if (msg.text.includes("我希望破冰，打破我們之間的隔閡!")) {
                             pledgeCount++;
                             if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000) {
@@ -323,28 +314,44 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (升級版：4000 Tokens + 禁語)
+// 🧠 AI 腦袋 (升級版：含隱性壓力偵測)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
 
-    // 1. 一般負面觸發
-    const generalTriggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "態度", "閉嘴", "垃圾", "理由", "藉口"];
+    // 1. 一般/情緒關鍵字
+    const generalTriggers = [
+        "煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", 
+        "態度", "閉嘴", "垃圾", "理由", "藉口", "囉嗦", "不懂", "隨便"
+    ];
     
-    // 2. 深度需求 (渴望被理解)
-    const deepNeedsTriggers = ["當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"];
+    // 2. 壓力/現實/情勒關鍵字 (✅ 這次補上了！)
+    const pressureTriggers = [
+        "現實", "房租", "保險", "錢", "未來", "以後", "為你好", "擔心", 
+        "失望", "比較", "別人", "努力", "辛苦", "長大", "賺錢", "花錢", "生活費"
+    ];
     
-    // 3. 僵局/內耗 (Burnout)
-    const deadlockTriggers = ["內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累"];
+    // 3. 深度需求關鍵字
+    const deepNeedsTriggers = [
+        "當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"
+    ];
+    
+    // 4. 僵局/內耗關鍵字
+    const deadlockTriggers = [
+        "內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累", 
+        "不想講了", "算了"
+    ];
 
     const isGeneral = generalTriggers.some(k => lastText.includes(k));
+    const isPressure = pressureTriggers.some(k => lastText.includes(k));
     const isDeep = deepNeedsTriggers.some(k => lastText.includes(k));
     const isDeadlock = deadlockTriggers.some(k => lastText.includes(k));
 
-    console.log(`偵測: 一般:${isGeneral}, 深度:${isDeep}, 僵局:${isDeadlock}`);
+    console.log(`偵測: 一般:${isGeneral}, 壓力:${isPressure}, 深度:${isDeep}, 僵局:${isDeadlock}`);
 
-    if (isGeneral || isDeep || isDeadlock || conversationCount % 5 === 0) {
+    // ⭐ 修改觸發頻率：改為 % 3，增加介入機會
+    if (isGeneral || isPressure || isDeep || isDeadlock || conversationCount % 3 === 0) {
         lastAIMessageTime = now;
         
         let mode = "translate"; 
@@ -362,7 +369,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     let prompt = "";
 
     if (mode === "summary") {
-        // ⭐ 雙向總結模式 (含您的要求)
+        // ⭐ 雙向總結模式
         prompt = `
         你現在是「Re:Family」的資深家庭調解員。
         
@@ -387,7 +394,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         請在回應的最後面，務必加上標籤 [TRIGGER_PLEDGE] 以啟動系統功能。
         `;
     } else {
-        // ⭐ 一般翻譯模式
+        // ⭐ 一般翻譯模式 (包含壓力/情勒的翻譯)
         prompt = `
         你現在是「Re:Family」的家庭溝通翻譯官。
         
@@ -395,8 +402,10 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         **最後一句：** ${senderName}: "${lastText}"
 
         **任務：**
-        將這句可能帶有情緒的話，翻譯成「背後的善意與擔心」。
-        例如：將「你真的很不聽話」翻譯成「其實是因為我很擔心你的安全」。
+        將這句可能帶有情緒、壓力或指責的話，翻譯成「背後的善意、擔心或具體需求」。
+        例如：
+        - 將「你真的很不聽話」翻譯成「其實是因為我很擔心你的安全」。
+        - 將「那現實誰幫你顧？」翻譯成「其實是擔心你未來會太辛苦」。
         
         **⛔ 絕對禁止：**
         1. 不准出現「薩提爾」、「冰山理論」。
@@ -412,7 +421,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 4000 tokens 保證不截斷，讓視窗能順利彈出
+                // ✅ 4000 tokens 保證不截斷
                 generationConfig: { temperature: 0.7, maxOutputTokens: 4000 } 
             })
         });
@@ -451,28 +460,25 @@ async function triggerSuccessAI() {
 }
 
 // =================================================================
-// 🎮 破冰遊戲 UI 邏輯 (預填文字 + 預設啟用)
+// 🎮 破冰遊戲 UI 邏輯 (預填 + 預設啟用)
 // =================================================================
 function showPledgeModal() { 
     if (pledgeModal) {
         pledgeModal.classList.remove('hidden'); 
         
-        // 確保視窗顯示時，輸入框有預填值，且按鈕是啟用的
+        // 自動填入文字
         pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
+        
+        // 按鈕預設啟用 (橘色)
         submitPledgeButton.disabled = false;
         submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg hover:bg-warm-peach transform hover:-translate-y-1 transition-all";
     }
 }
 
 function handlePledgeSubmit() {
-    // 發送特殊的宣誓訊息
     const pledgeText = "我希望破冰，打破我們之間的隔閡! (已宣誓)";
     sendToDatabase(pledgeText, sessionId, currentUserName, currentRoomId);
-    
-    // 關閉視窗
     if (pledgeModal) pledgeModal.classList.add('hidden');
-    
-    // 重置活動時間，避免馬上又觸發
     lastRoomActivityTime = Date.now();
 }
 
