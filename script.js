@@ -433,7 +433,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
 
 // 專門觸發成功慶祝的 AI
 async function triggerSuccessAI() {
-    const successMsg = "謝謝你們體諒彼此，一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
+    const successMsg = "謝謝你們體諒彼此，給對方以個擁抱吧!一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
     await sendToDatabase(successMsg, 'AI', 'Re:Family 智能助手', currentRoomId);
     
     if(confettiContainer) {
@@ -502,3 +502,4 @@ function handleLeaveRoom() {
     localStorage.clear();
     window.location.reload();
 }
+
