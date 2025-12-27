@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】請填入您的新金鑰 (請務必切成兩半) 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCwVW"; // 請換回您原本的
-const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0"; // 請換回您原本的
+const KEY_PART_1 = "AIzaSyCwVW"; 
+const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
 const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
@@ -74,18 +74,16 @@ window.onload = function() {
         if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
     });
 
-    // 破冰輸入框監聽
+    // 破冰輸入框監聽 (確保如果使用者刪除文字，按鈕會變回灰色)
     if (pledgeInput) {
         pledgeInput.addEventListener('input', (e) => {
             const targetText = "我希望破冰，打破我們之間的隔閡!";
             if (e.target.value.trim() === targetText) {
                 submitPledgeButton.disabled = false;
-                submitPledgeButton.classList.remove('bg-gray-300', 'cursor-not-allowed');
-                submitPledgeButton.classList.add('bg-warm-orange', 'hover:bg-warm-peach', 'transform', 'hover:-translate-y-1');
+                submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg hover:bg-warm-peach transform hover:-translate-y-1 transition-all";
             } else {
                 submitPledgeButton.disabled = true;
-                submitPledgeButton.classList.add('bg-gray-300', 'cursor-not-allowed');
-                submitPledgeButton.classList.remove('bg-warm-orange', 'hover:bg-warm-peach', 'transform', 'hover:-translate-y-1');
+                submitPledgeButton.className = "w-full py-3.5 bg-gray-300 text-white font-bold rounded-xl cursor-not-allowed transition-all shadow-md";
             }
         });
     }
@@ -131,7 +129,7 @@ async function cleanupExpiredData(roomId) {
 }
 
 // =================================================================
-// 🏠 房間進入
+// 🏠 房間進入邏輯
 // =================================================================
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
@@ -208,12 +206,12 @@ function updateUIForChat() {
 }
 
 // =================================================================
-// 💬 訊息顯示
+// 💬 訊息顯示邏輯 (含破冰觸發邏輯)
 // =================================================================
 function displayMessage(content, type, senderName, timestamp) {
     if (typeof content !== 'string') return;
     
-    // 隱藏指令標籤
+    // 隱藏指令標籤 (確保不顯示出來)
     const displayContent = content
         .replace('[TRIGGER_PLEDGE]', '')
         .replace('[AI_SUCCESS_REPLY]', ''); 
@@ -325,7 +323,7 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (升級版：2500 Tokens + 禁語)
+// 🧠 AI 腦袋 (升級版：4000 Tokens + 禁語)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
@@ -364,7 +362,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     let prompt = "";
 
     if (mode === "summary") {
-        // ⭐ 雙向總結模式
+        // ⭐ 雙向總結模式 (含您的要求)
         prompt = `
         你現在是「Re:Family」的資深家庭調解員。
         
@@ -375,7 +373,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         請**總結雙方目前的心聲**，轉化成 100 到 250 字之間的溫暖解析。
         
         **⛔ 絕對禁止：**
-        1. 不准出現「Satir」、「薩提爾」、「冰山理論」等專業名詞。
+        1. 不准出現「Satir」、「薩提爾」、「冰山理論」等專業名詞。直接像個真人一樣說話。
         2. 不要說教。
         
         **解析架構：**
@@ -414,8 +412,8 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 2500 tokens 保證不截斷
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2500 } 
+                // ✅ 4000 tokens 保證不截斷，讓視窗能順利彈出
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4000 } 
             })
         });
 
@@ -453,14 +451,16 @@ async function triggerSuccessAI() {
 }
 
 // =================================================================
-// 🎮 破冰遊戲 UI 邏輯
+// 🎮 破冰遊戲 UI 邏輯 (預填文字 + 預設啟用)
 // =================================================================
 function showPledgeModal() { 
     if (pledgeModal) {
         pledgeModal.classList.remove('hidden'); 
-        pledgeInput.value = ""; // 清空輸入
-        submitPledgeButton.disabled = true;
-        submitPledgeButton.classList.add('bg-gray-300', 'cursor-not-allowed');
+        
+        // 確保視窗顯示時，輸入框有預填值，且按鈕是啟用的
+        pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
+        submitPledgeButton.disabled = false;
+        submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg hover:bg-warm-peach transform hover:-translate-y-1 transition-all";
     }
 }
 
