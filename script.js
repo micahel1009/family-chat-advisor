@@ -124,7 +124,7 @@ async function cleanupExpiredData(roomId) {
 }
 
 // =================================================================
-// 🏠 房間進入邏輯
+// 🏠 房間進入邏輯 (✅ 已整合重複偵測邏輯)
 // =================================================================
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
@@ -144,6 +144,18 @@ async function handleRoomEntry() {
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
+            // ⭐ 新增：代碼重複偵測通知
+            const confirmed = confirm(
+                `📢 通知：房間代碼「${roomId}」目前已被佔用。\n\n` +
+                `如果您是受邀加入家人的房間，請按「確定」並輸入密碼。\n` +
+                `如果是要建立新房間，請按「取消」並換一個代碼。`
+            );
+
+            if (!confirmed) {
+                resetEntryButton();
+                return;
+            }
+
             if (doc.data().password !== password) {
                 alert("密碼錯誤！");
                 resetEntryButton();
@@ -373,24 +385,24 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         prompt = `
         你現在是「Re:Family」的資深家庭調解員。
         
-        **對話紀錄：**
+        對話紀錄：
         ${historyText}
 
-        **任務：**
-        請**總結雙方目前的心聲**，轉化成 100 到 250 字之間的溫暖解析。
+        任務：
+        請總結雙方目前的心聲，轉化成 100 到 250 字之間的溫暖解析。
         
-        **⛔ 絕對禁止：**
+        ⛔ 絕對禁止：
         1. 不准出現「Satir」、「薩提爾」、「冰山理論」等專業名詞。直接像個真人一樣說話。
         2. 不要說教。
         
-        **解析架構：**
-        1. **${senderName} (當事人) 的心聲：** 他表面上在爭執，但內心渴望的是什麼？（如：想被當成大人）。
-        2. **對方的善意：** 對方行為背後隱藏的善意或擔憂是什麼？（如：怕孩子受傷）。
+        解析架構：
+        1. ${senderName} (當事人) 的心聲： 他表面上在爭執，但內心渴望的是什麼？（如：想被當成大人）。
+        2. 對方的善意： 對方行為背後隱藏的善意或擔憂是什麼？（如：怕孩子受傷）。
         
-        **3. 行動呼籲 (重要)：**
+        3. 行動呼籲 (重要)：
         總結完後，請務必明確告訴雙方：『如果想緩解一下，請輸入：我希望破冰，打破我們之間的隔閡!』
         
-        **最後指令：**
+        最後指令：
         請在回應的最後面，務必加上標籤 [TRIGGER_PLEDGE] 以啟動系統功能。
         `;
     } else {
@@ -398,20 +410,20 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         prompt = `
         你現在是「Re:Family」的家庭溝通翻譯官。
         
-        **上下文：** ${historyText}
-        **最後一句：** ${senderName}: "${lastText}"
+        上下文： ${historyText}
+        最後一句： ${senderName}: "${lastText}"
 
-        **任務：**
+        任務：
         將這句可能帶有情緒、壓力或指責的話，翻譯成「背後的善意、擔心或具體需求」。
         例如：
         - 將「你真的很不聽話」翻譯成「其實是因為我很擔心你的安全」。
         - 將「那現實誰幫你顧？」翻譯成「其實是擔心你未來會太辛苦」。
         
-        **⛔ 絕對禁止：**
+        ⛔ 絕對禁止：
         1. 不准出現「薩提爾」、「冰山理論」。
         2. 不要說「根據理論」。
         
-        **限制：** 100字以內，語氣溫柔。
+        限制： 100字以內，語氣溫柔。
         `;
     }
 
