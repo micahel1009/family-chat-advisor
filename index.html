@@ -155,7 +155,7 @@
                 </div>
                 <div class="space-y-1">
                     <p class="text-gray-800 dark:text-gray-200 font-medium text-lg">開發者：鄭傳耀</p>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">淡江大學 |人工智慧學系一年級</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">淡江大學 | 人工智慧學系一年級</p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-2 pt-2">
                     <span class="px-3 py-1 bg-orange-50 dark:bg-gray-800 text-warm-orange text-xs rounded-full border border-orange-100">Google Gemini AI</span>
@@ -166,9 +166,8 @@
                     <button onclick="document.getElementById('conceptModal').classList.remove('hidden')" class="text-warm-orange hover:text-warm-peach text-sm font-bold flex items-center gap-2 transition-colors underline decoration-2 underline-offset-4">
                         <i class="fas fa-book-open"></i> 查看開發日誌與設計初衷
                     </button>
-                    <div class="flex items-center space-x-6 text-gray-400">
-                        <a href="https://github.com/micahel1009/family-chat-advisor" target="_blank" class="hover:text-warm-orange transition-colors"><i class="fab fa-github text-2xl"></i></a>
-                        <span class="text-xs">© 2026 Re:Family. All Rights Reserved.</span>
+                    <div class="flex items-center pt-2">
+                        <span class="text-xs text-gray-400">© 2026 Re:Family. All Rights Reserved.</span>
                     </div>
                 </div>
             </div>
@@ -178,10 +177,10 @@
     <div id="pledgeModal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-pop-in border-4 border-warm-peach/30">
             <div class="w-24 h-24 bg-gradient-to-b from-warm-peach to-pink-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md"><i class="fas fa-handshake text-5xl text-white"></i></div>
-            <h3 class="text-2xl font-bold mb-2">打破隔閡的關鍵時刻</h3>
+            <h3 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white">打破隔閡的關鍵時刻</h3>
             <p class="text-gray-600 dark:text-gray-300 mb-6 text-sm">請在下方輸入約定語句：</p>
             <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl mb-4 text-warm-orange font-bold text-base border border-orange-100">我希望破冰，打破我們之間的隔閡!</div>
-            <input type="text" id="pledgeInput" value="我希望破冰，打破我們之間的隔閡!" class="w-full p-3 border-2 rounded-xl text-center mb-4 focus:border-warm-orange outline-none">
+            <input type="text" id="pledgeInput" value="我希望破冰，打破我們之間的隔閡!" class="w-full p-3 border-2 rounded-xl text-center mb-4 focus:border-warm-orange outline-none bg-white dark:bg-gray-700 dark:text-white">
             <div class="space-y-3">
                 <button id="submitPledgeButton" class="w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg hover:bg-warm-peach transform hover:-translate-y-1 transition-all">確認送出</button>
                 <button onclick="document.getElementById('pledgeModal').classList.add('hidden')" class="w-full py-2 text-gray-400 text-sm">暫時跳過</button>
