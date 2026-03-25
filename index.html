@@ -129,16 +129,16 @@
                         <div class="w-16 h-16 bg-warm-orange rounded-full mx-auto flex items-center justify-center mb-4 shadow-lg"><i class="fas fa-door-open text-2xl text-white"></i></div>
                         <h4 class="font-bold text-xl mb-4 text-warm-orange">加入家庭調解室</h4>
                         <div class="space-y-3">
-                            <input type="text" id="roomIdInput" placeholder="房間代碼 (例如: 1234)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
-                            <input type="text" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
-                            <input type="text" id="userNameInput" placeholder="您的暱稱 (例: 爸爸)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white">
+                            <input type="text" id="roomIdInput" placeholder="房間代碼 (例如: 1234)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white text-gray-800">
+                            <input type="text" id="roomPasswordInput" placeholder="房間密碼 (必填)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white text-gray-800">
+                            <input type="text" id="userNameInput" placeholder="您的暱稱 (例: 爸爸)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-warm-orange outline-none bg-white text-gray-800">
                             <button id="startChatButton" class="w-full px-4 py-3 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-lg hover:shadow-lg transform active:scale-95 transition-all">開始群聊</button>
                         </div>
                     </div>
                 </div>
                 <div class="chat-input-fixed bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600">
                     <div class="flex items-end space-x-2">
-                        <input type="text" id="userInput" placeholder="請先加入房間..." class="flex-grow p-3 md:p-4 border rounded-xl bg-gray-50 dark:bg-gray-700 outline-none" disabled>
+                        <input type="text" id="userInput" placeholder="請先加入房間..." class="flex-grow p-3 md:p-4 border rounded-xl bg-gray-50 dark:bg-gray-700 outline-none text-gray-800 dark:text-gray-100" disabled>
                         <button id="sendButton" class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-warm-orange to-warm-peach rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform flex-shrink-0" disabled><i class="fas fa-paper-plane text-sm md:text-base"></i></button>
                     </div>
                 </div>
@@ -194,16 +194,16 @@
             <h3 class="text-2xl font-bold text-warm-orange mb-6 flex items-center gap-3"><i class="fas fa-lightbulb"></i> 設計初衷與核心理念</h3>
             <div class="space-y-4 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed overflow-y-auto max-h-[60vh] pr-2">
                 <p class="font-bold text-lg">「別讓氣話，遮住了愛的本意。」</p>
-                <p>作為大學生，我們觀察到現代家庭雖然通訊發達，但情緒化的「氣話」往往成為溝通的阻礙。Re:Family 的目標不是取代對話，而是透過AI智能調解，在衝突發生的瞬間提供溫暖的翻譯與緩衝。</p>
+                <p>作為大學生，我們觀察到現代家庭雖然通訊發達，但情緒化的「氣話」往往成為溝通的阻礙。Re:Family 的目標不是取代對話，而是透過 AI 智能調解，在衝突發生的瞬間提供溫暖的翻譯與緩衝。</p>
                 <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl border-l-4 border-warm-orange">
                     <p class="font-bold mb-1">技術核心 (Technical Highlights):</p>
                     <ul class="list-disc list-inside space-y-1 text-sm">
-                        <li>雙模式AI邏輯：整合 Google Gemini API，根據情緒關鍵字自動切換「溫暖翻譯」與「雙向總結」模式。</li>
-                        <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊與狀態監聽。</li>
-                        <li>UX心理學應用：設計「破冰宣誓」與「冷場偵測」機制，利用行為心理學引導使用者打破僵局。</li>
+                        <li>雙模式 AI 邏輯：整合 Google Gemini API，根據情緒關鍵字自動切換模式。</li>
+                        <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊。</li>
+                        <li>UX 心理學應用：設計「破冰宣誓」與「冷場偵測」機制。</li>
                     </ul>
                 </div>
-                <p>這個專案代表了對AI賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
+                <p>這個專案代表了對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
             </div>
         </div>
     </div>
