@@ -56,6 +56,12 @@
         .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+        
+        /* 正在輸入中的跳動小點點 */
+        .typing-dot { animation: typing 1.4s infinite; opacity: 0; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
 <body class="font-noto bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 transition-all duration-300">
@@ -115,11 +121,17 @@
         <div class="max-w-4xl mx-auto px-6 lg:px-8">            
             <div class="text-center mb-16"><h2 class="text-4xl lg:text-5xl font-bold mb-6"><span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span></h2></div>
             <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl chat-container-card" id="chat-widget-container">
-                <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center">
+                <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-heart text-white"></i></div>
-                        <div><h3 class="text-white font-semibold">Re:Family 智能助手</h3><p class="text-white/80 text-sm">正在線上・隨時為您服務</p></div>
+                        <div>
+                            <h3 class="text-white font-semibold leading-tight text-sm md:text-base">Re:Family 智能助手</h3>
+                            <div id="typingIndicator" class="text-white/80 text-xs flex items-center gap-1 opacity-0 transition-opacity">
+                                <span id="typingUserName">有人</span>正在思考中<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span>
+                            </div>
+                        </div>
                     </div>
+                    <div id="onlineStatusBadge" class="hidden px-2 py-1 bg-white/20 rounded-lg text-[10px] text-white font-bold">已連接</div>
                 </div>
                 <div id="chatArea" class="chat-messages-area space-y-4">
                     <div id="loadingIndicator" class="hidden text-center text-sm text-gray-500 dark:text-gray-400 p-2"><i class="fas fa-spinner fa-spin mr-2"></i>AI 正在分析...</div>
@@ -194,23 +206,23 @@
             <h3 class="text-2xl font-bold text-warm-orange mb-6 flex items-center gap-3"><i class="fas fa-lightbulb"></i> 設計初衷與核心理念</h3>
             <div class="space-y-4 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed overflow-y-auto max-h-[60vh] pr-2">
                 <p class="font-bold text-lg">「別讓氣話，遮住了愛的本意。」</p>
-                <p>作為大學生，我們觀察到現代家庭雖然通訊發達，但情緒化的「氣話」往往成為溝通的阻礙。Re:Family 的目標不是取代對話，而是透過 AI 智能調解，在衝突發生的瞬間提供溫暖的翻譯與緩衝。</p>
+                <p>作為大學生，我們觀察到現代家庭情緒化的「氣話」往往成為溝通阻礙。Re:Family 透過 AI 智能調解，在衝突發生時提供溫暖的翻譯與緩衝。</p>
                 <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl border-l-4 border-warm-orange">
                     <p class="font-bold mb-1">技術核心 (Technical Highlights):</p>
                     <ul class="list-disc list-inside space-y-1 text-sm">
-                        <li>雙模式 AI 邏輯：整合 Google Gemini API，根據情緒關鍵字自動切換「溫暖翻譯」與「雙向總結」模式。</li>
-                        <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊與狀態監聽。</li>
-                        <li>UX 心理學應用：設計「破冰宣誓」與「冷場偵測」機制。</li>
+                        <li>雙模式 AI 邏輯：整合 Google Gemini API 自動切換調解模式。</li>
+                        <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊與打字偵測。</li>
+                        <li>行為心理學應用：設計「破冰宣誓」機制引導和解。</li>
                     </ul>
                 </div>
-                <p>這個專案代表了對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
+                <p>專案代表對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
             </div>
         </div>
     </div>
 
     <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
 
-    <script src="script.js?v=FINAL_VERSION"></script>
+    <script src="script.js?v=TYPING_VERSION"></script>
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
         const html = document.documentElement;
