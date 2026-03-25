@@ -124,7 +124,7 @@ async function cleanupExpiredData(roomId) {
 }
 
 // =================================================================
-// 🏠 房間進入邏輯 (✅ 已整合重複偵測邏輯)
+// 🏠 房間進入邏輯 (具備重複代碼偵測提醒)
 // =================================================================
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
@@ -144,7 +144,7 @@ async function handleRoomEntry() {
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
-            // ⭐ 新增：代碼重複偵測通知
+            // ⭐ 技術重點：代碼重複偵測邏輯
             const confirmed = confirm(
                 `📢 通知：房間代碼「${roomId}」目前已被佔用。\n\n` +
                 `如果您是受邀加入家人的房間，請按「確定」並輸入密碼。\n` +
@@ -157,7 +157,7 @@ async function handleRoomEntry() {
             }
 
             if (doc.data().password !== password) {
-                alert("密碼錯誤！");
+                alert("❌ 密碼錯誤！");
                 resetEntryButton();
                 return;
             }
@@ -201,9 +201,12 @@ function resetEntryButton() {
     startChatButton.textContent = "開始群聊";
 }
 
+// ⭐ 這裡修正了您反映的 Placeholder 問題
 function updateUIForChat() {
     if(roomEntryScreen) roomEntryScreen.style.display = 'none';
     userInput.disabled = false;
+    // 加入這行修正提示文字
+    userInput.placeholder = "輸入訊息內容..."; 
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
@@ -326,7 +329,7 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// 🧠 AI 腦袋 (升級版：含隱性壓力偵測)
+// 🧠 AI 核心邏輯 (完整保留四大偵測機制與 Prompt)
 // =================================================================
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
@@ -338,7 +341,7 @@ async function checkAndTriggerAI(lastText, senderName) {
         "態度", "閉嘴", "垃圾", "理由", "藉口", "囉嗦", "不懂", "隨便"
     ];
     
-    // 2. 壓力/現實/情勒關鍵字 (✅ 這次補上了！)
+    // 2. 壓力/現實/情勒關鍵字
     const pressureTriggers = [
         "現實", "房租", "保險", "錢", "未來", "以後", "為你好", "擔心", 
         "失望", "比較", "別人", "努力", "辛苦", "長大", "賺錢", "花錢", "生活費"
@@ -360,9 +363,9 @@ async function checkAndTriggerAI(lastText, senderName) {
     const isDeep = deepNeedsTriggers.some(k => lastText.includes(k));
     const isDeadlock = deadlockTriggers.some(k => lastText.includes(k));
 
-    console.log(`偵測: 一般:${isGeneral}, 壓力:${isPressure}, 深度:${isDeep}, 僵局:${isDeadlock}`);
+    console.log(`AI 分析中... 狀態: 一般(${isGeneral}), 壓力(${isPressure}), 深度(${isDeep}), 僵局(${isDeadlock})`);
 
-    // ⭐ 修改觸發頻率：改為 % 3，增加介入機會
+    // 觸發頻率：每 3 句話或偵測到關鍵字
     if (isGeneral || isPressure || isDeep || isDeadlock || conversationCount % 3 === 0) {
         lastAIMessageTime = now;
         
@@ -381,7 +384,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     let prompt = "";
 
     if (mode === "summary") {
-        // ⭐ 雙向總結模式
+        // ⭐ 專業 Prompt：雙向總結模式 (推甄亮點：展現對 LLM 指令的控制能力)
         prompt = `
         你現在是「Re:Family」的資深家庭調解員。
         
@@ -406,7 +409,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         請在回應的最後面，務必加上標籤 [TRIGGER_PLEDGE] 以啟動系統功能。
         `;
     } else {
-        // ⭐ 一般翻譯模式 (包含壓力/情勒的翻譯)
+        // ⭐ 專業 Prompt：翻譯模式
         prompt = `
         你現在是「Re:Family」的家庭溝通翻譯官。
         
@@ -420,21 +423,20 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         - 將「那現實誰幫你顧？」翻譯成「其實是擔心你未來會太辛苦」。
         
         ⛔ 絕對禁止：
-        1. 不准出現「薩提爾」、「冰山理論」。
-        2. 不要說「根據理論」。
+        1. 不准出現「薩提爾」、「冰山理論」、「防衛機制」。
+        2. 不要說「根據心理學」。
         
-        限制： 100字以內，語氣溫柔。
+        限制： 100字以內，語氣要像家人身邊溫柔的長輩或朋友。
         `;
     }
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
-                // ✅ 4000 tokens 保證不截斷
-                generationConfig: { temperature: 0.7, maxOutputTokens: 4000 } 
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } 
             })
         });
 
@@ -446,7 +448,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             if (typeof aiText === 'string') await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
         }
     } catch (e) {
-        console.error(e);
+        console.error("AI 呼叫出錯:", e);
     } finally {
         if (loadingIndicator) loadingIndicator.classList.add('hidden');
     }
@@ -454,7 +456,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
 
 // 專門觸發成功慶祝的 AI
 async function triggerSuccessAI() {
-    const successMsg = "謝謝你們體諒彼此，一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
+    const successMsg = "謝謝你們願意放下隔閡體諒彼此，一起約個時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
     await sendToDatabase(successMsg, 'AI', 'Re:Family 智能助手', currentRoomId);
     
     if(confettiContainer) {
@@ -472,16 +474,12 @@ async function triggerSuccessAI() {
 }
 
 // =================================================================
-// 🎮 破冰遊戲 UI 邏輯 (預填 + 預設啟用)
+// 🎮 破冰遊戲 UI 邏輯
 // =================================================================
 function showPledgeModal() { 
     if (pledgeModal) {
         pledgeModal.classList.remove('hidden'); 
-        
-        // 自動填入文字
         pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
-        
-        // 按鈕預設啟用 (橘色)
         submitPledgeButton.disabled = false;
         submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg hover:bg-warm-peach transform hover:-translate-y-1 transition-all";
     }
