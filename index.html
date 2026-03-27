@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -97,7 +96,10 @@
                     </h1>                    
                     <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-400 leading-relaxed">                        
                         家庭溝通總是充滿誤解？Re:Family 智能助手在旁守護，協助您將「指責」轉化為「需求」，重建親密連結。
-                    </p>                
+                    </p>
+                    <button onclick="document.getElementById('manualModal').classList.remove('hidden')" class="px-6 py-3 bg-white dark:bg-gray-800 text-warm-orange font-bold rounded-2xl shadow-lg border border-orange-100 hover:scale-105 transition-all flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i> 查看完整使用手冊 (操作手冊)
+                    </button>
                 </div>                                      
                 <div class="flex flex-wrap gap-4 items-center text-sm text-gray-500 dark:text-gray-400">                    
                     <div class="flex items-center space-x-2"><i class="fas fa-user-secret text-warm-orange"></i><span>隱私保護設計</span></div>
@@ -109,7 +111,7 @@
             </div>
             <div class="relative">                
                 <div class="relative z-10">
-                    <img src="./news_refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="this.style.display='none'">
+                    <img src="./refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="this.style.display='none'">
                 </div>                                      
                 <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
                 <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
@@ -185,6 +187,19 @@
         </div>
     </footer>
 
+    <div id="manualModal" class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-5xl w-full p-6 relative animate-pop-in overflow-y-auto max-h-[95vh]">
+            <button onclick="document.getElementById('manualModal').classList.add('hidden')" class="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500 hover:text-warm-orange transition-colors"><i class="fas fa-times text-xl"></i></button>
+            <div class="space-y-6">
+                <h3 class="text-2xl font-bold text-warm-orange text-center mb-4">Re:Family 使用者說明手冊</h3>
+                <div class="grid gap-6">
+                    <img src="./S__59826283_0.jpg" class="w-full rounded-2xl shadow-lg border border-orange-50" alt="說明書 1">
+                    <img src="./S__59826284_0.jpg" class="w-full rounded-2xl shadow-lg border border-orange-50" alt="說明書 2">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="pledgeModal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-pop-in border-4 border-warm-peach/30">
             <div class="w-24 h-24 bg-gradient-to-b from-warm-peach to-pink-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md"><i class="fas fa-handshake text-5xl text-white"></i></div>
@@ -209,19 +224,19 @@
                 <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl border-l-4 border-warm-orange">
                     <p class="font-bold mb-1">技術核心 (Technical Highlights):</p>
                     <ul class="list-disc list-inside space-y-1 text-sm">
-                        <li>雙模式 AI 邏輯：整合 Google Gemini API 自動切換調解模式。</li>
+                        <li>雙模式 AI 邏輯：整合 Google Gemini API 自動切換模式。</li>
                         <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊與狀態監聽。</li>
                         <li>UX 心理學應用：設計「破冰宣誓」與「打字避讓」機制。</li>
                     </ul>
                 </div>
-                <p>專案代表對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
+                <p>這個專案代表了對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
             </div>
         </div>
     </div>
 
     <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
 
-    <script src="script.js?v=FIXED_TRIGGER"></script>
+    <script src="script.js?v=FINAL_MANUAL"></script>
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
         const html = document.documentElement;
