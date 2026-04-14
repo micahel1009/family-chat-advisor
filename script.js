@@ -53,8 +53,9 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
-// 在線人數與打字列表
+// 在線人數與名單 (用於 AI 總結與打字偵測)
 let currentRoomUserCount = 0;
+let roomActiveUsersList = []; // ⭐ 新增：記錄房間有哪些人，給總結功能用
 let typingUsersList = [];
 let typingTimeout = null;
 
@@ -77,6 +78,12 @@ window.onload = function() {
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
     
+    // ⭐ 總結報告按鈕監聽
+    const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+    if (generateSummaryBtn) {
+        generateSummaryBtn.addEventListener('click', generateSummaryReport);
+    }
+
     // ⭐ 輸入偵測邏輯
     if(userInput) {
         userInput.addEventListener('input', () => {
@@ -88,7 +95,6 @@ window.onload = function() {
                 e.preventDefault(); 
                 handleSendAction(); 
             }
-            // 只要在按鍵盤，就更新最後活動時間
             lastRoomActivityTime = Date.now();
         });
         userInput.addEventListener('blur', () => updateTypingStatus(false));
@@ -126,11 +132,9 @@ async function updateTypingStatus(isTyping) {
     } catch (e) { console.warn("打字同步略過"); }
 }
 
-// ⭐ 冷場偵測 (修正：多人在線 + 無人打字時才觸發)
+// ⭐ 冷場偵測
 function checkIdleAndTriggerPledge() {
     if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
-    
-    // 如果人數不足，或有人正在打字，則不觸發冷場機制
     if (currentRoomUserCount < 2 || typingUsersList.length > 0) {
         lastRoomActivityTime = Date.now();
         return;
@@ -138,7 +142,6 @@ function checkIdleAndTriggerPledge() {
 
     const idleTime = Date.now() - lastRoomActivityTime;
     if (idleTime > 60000) { 
-        console.log("偵測到閒置，自動觸發破冰！");
         showPledgeModal();
     }
 }
@@ -202,6 +205,11 @@ function updateUIForChat() {
     userInput.placeholder = "輸入訊息內容..."; 
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
+    
+    // ⭐ 顯示總結按鈕
+    const sumBtn = document.getElementById('generateSummaryBtn');
+    if(sumBtn) sumBtn.classList.remove('hidden');
+
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
     displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
@@ -254,7 +262,10 @@ function startChatListener(roomId) {
         .onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
-                currentRoomUserCount = data.active_users ? data.active_users.length : 0;
+                // ⭐ 同步最新在線名單，給總結功能使用
+                roomActiveUsersList = data.active_users || [];
+                currentRoomUserCount = roomActiveUsersList.length;
+                
                 typingUsersList = (data.typing_users || []).filter(u => u !== currentUserName);
                 if (typingUsersList.length > 0) {
                     typingUserName.textContent = typingUsersList.join(', ');
@@ -296,6 +307,108 @@ function startChatListener(roomId) {
             });
         });
 }
+
+// =================================================================
+// ⭐ 新增：個人化總結報告 (壓軸亮點)
+// =================================================================
+async function generateSummaryReport() {
+    // 防呆：如果都還沒聊天，不給總結
+    if (conversationHistory.length < 2) {
+        alert("目前的對話還太少，請多聊幾句再讓我幫你們總結喔！");
+        return;
+    }
+
+    // 1. 顯示溫馨的 Loading 彈窗
+    document.getElementById('summaryLoadingModal').classList.remove('hidden');
+
+    // 2. 只抓取最新 40 筆紀錄，避免超過 API 負載
+    const historyText = conversationHistory.slice(-40).map(m => `${m.name}: ${m.text}`).join('\n');
+    const usersStr = roomActiveUsersList.join('、');
+
+    // 3. 嚴格的 JSON Prompt 結構設計
+    const prompt = `
+    你現在是經驗豐富的家庭諮商師。請閱讀以下對話紀錄，並為房間內的每位成員 (${usersStr}) 產生一份專屬的溝通總結。
+    對話紀錄：
+    ${historyText}
+
+    要求：
+    1. 針對名單上的每個人，分別寫出他們在對話中的「內心渴望 (thoughts)」與「溫暖建議 (advice)」。
+    2. 防呆機制：若某人在對話中發言極少或未發言，請不要捏造，改以溫暖口吻鼓勵（例如：「這次多為聆聽，建議下次多分享感受...」）。
+    3. 必須嚴格輸出為 JSON 格式，不要包含任何 markdown 標記 (如 \`\`\`json)，直接輸出純 JSON 字串。
+    
+    格式必須完全符合以下結構：
+    {
+      "overall": "用 50 字總結這次家庭對話的整體氛圍與核心問題。",
+      "cards": [
+        { "name": "名單上的人名", "role": "他在對話中的角色(如:主要表達者/聆聽者)", "thoughts": "他的心聲解讀...", "advice": "給他的溫暖建議..." }
+      ]
+    }`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 2000 } })
+        });
+        
+        const data = await response.json();
+        let aiText = data.candidates[0].content.parts[0].text;
+        
+        // 清理可能出現的 markdown 格式，確保能順利 Parse JSON
+        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const firstBrace = aiText.indexOf('{');
+        const lastBrace = aiText.lastIndexOf('}');
+        if(firstBrace !== -1 && lastBrace !== -1){
+            aiText = aiText.substring(firstBrace, lastBrace + 1);
+        }
+        
+        const result = JSON.parse(aiText);
+        renderSummaryCards(result);
+
+    } catch (e) {
+        console.error("總結失敗", e);
+        alert("分析報告時遇到一點小阻礙，請稍後再試一次！");
+    } finally {
+        // 隱藏 Loading 彈窗
+        document.getElementById('summaryLoadingModal').classList.add('hidden');
+    }
+}
+
+// 將 JSON 資料渲染成精美卡片
+function renderSummaryCards(data) {
+    document.getElementById('summaryOverallText').textContent = data.overall;
+    const container = document.getElementById('summaryCardsContainer');
+    container.innerHTML = '';
+
+    data.cards.forEach(card => {
+        const cardDiv = document.createElement('div');
+        // 卡片設計：圓角、陰影、漸層邊框
+        cardDiv.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange transition-transform hover:-translate-y-1";
+        cardDiv.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-warm-orange font-bold text-xl shadow-sm">
+                    ${card.name.charAt(0)}
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 dark:text-white text-lg">${card.name}</h4>
+                    <span class="text-xs text-warm-orange bg-orange-50 dark:bg-gray-700 border border-orange-100 dark:border-gray-600 px-2 py-1 rounded-full">${card.role}</span>
+                </div>
+            </div>
+            <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+                    <p><strong class="text-warm-orange flex items-center gap-2 mb-1"><i class="fas fa-heartbeat"></i> 內心渴望：</strong>${card.thoughts}</p>
+                </div>
+                <div class="bg-orange-50/50 dark:bg-gray-700/50 p-3 rounded-xl">
+                    <p><strong class="text-calm-blue flex items-center gap-2 mb-1"><i class="fas fa-lightbulb"></i> 專屬建議：</strong>${card.advice}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(cardDiv);
+    });
+
+    // 顯示結果視窗
+    document.getElementById('summaryResultModal').classList.remove('hidden');
+}
+
 
 // 🧠 AI 偵測機制 (完整保留)
 async function checkAndTriggerAI(lastText, senderName) {
@@ -367,16 +480,14 @@ function handlePledgeSubmit() {
     lastRoomActivityTime = Date.now();
 }
 
-// ⭐ 這裡修正了：只有按下傳送才判定「破冰」關鍵字
 function handleSendAction() {
     const userText = userInput.value.trim();
     if (!currentRoomId || !userText) return;
 
-    // 按下傳送鍵後，判定是否包含「破冰」
     if (userText.includes("破冰")) {
         console.log("主動發送觸發：破冰");
         showPledgeModal();
-        userInput.value = ""; // 清空，不真正發送這兩個字
+        userInput.value = ""; 
         updateTypingStatus(false);
         return;
     }
