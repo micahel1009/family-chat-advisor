@@ -53,9 +53,9 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
-// 在線人數與名單 (用於 AI 總結與打字偵測)
+// 在線人數與名單
 let currentRoomUserCount = 0;
-let roomActiveUsersList = []; // ⭐ 新增：記錄房間有哪些人，給總結功能用
+let roomActiveUsersList = []; 
 let typingUsersList = [];
 let typingTimeout = null;
 
@@ -78,13 +78,11 @@ window.onload = function() {
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
     
-    // ⭐ 總結報告按鈕監聽
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');
     if (generateSummaryBtn) {
         generateSummaryBtn.addEventListener('click', generateSummaryReport);
     }
 
-    // ⭐ 輸入偵測邏輯
     if(userInput) {
         userInput.addEventListener('input', () => {
             updateTypingStatus(true);
@@ -117,7 +115,13 @@ window.onload = function() {
     setInterval(checkIdleAndTriggerPledge, 5000);
 };
 
-// ⭐ 打字狀態同步
+window.addEventListener('beforeunload', () => {
+    if (currentRoomId && currentUserName) {
+        db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId)
+          .update({ typing_users: firebase.firestore.FieldValue.arrayRemoving(currentUserName) });
+    }
+});
+
 async function updateTypingStatus(isTyping) {
     if (!currentRoomId || !currentUserName) return;
     const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId);
@@ -132,17 +136,40 @@ async function updateTypingStatus(isTyping) {
     } catch (e) { console.warn("打字同步略過"); }
 }
 
-// ⭐ 冷場偵測
+// =================================================================
+// ⭐ 核心修改區：冷場偵測改為「呼叫 AI 分析」，而不是直接跳視窗
+// =================================================================
 function checkIdleAndTriggerPledge() {
     if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
-    if (currentRoomUserCount < 2 || typingUsersList.length > 0) {
+    
+    // 只有 1 人時，無限重置計時器
+    if (currentRoomUserCount < 2) {
         lastRoomActivityTime = Date.now();
         return;
     }
 
     const idleTime = Date.now() - lastRoomActivityTime;
+
+    // 若有人打字，給予最多 90 秒的寬容期
+    if (typingUsersList.length > 0 && idleTime < 90000) {
+        return;
+    }
+
+    // 閒置超過 60 秒 (無人打字) 或 狀態卡死超過 90 秒
     if (idleTime > 60000) { 
-        showPledgeModal();
+        console.log("偵測到冷場，交由 AI 分析目前對話！");
+        
+        if (conversationHistory.length > 0) {
+            // 抓取最後一則訊息，呼叫已寫好的 AI 翻譯/總結機制
+            const lastMsg = conversationHistory[conversationHistory.length - 1];
+            // 使用 summary 模式，AI 會分析紀錄並自動帶出破冰標籤
+            triggerAIPrompt("summary", lastMsg.text, lastMsg.name);
+        } else {
+            // 如果完全沒人講過話就冷場，才直接跳出破冰視窗
+            showPledgeModal();
+        }
+        
+        lastRoomActivityTime = Date.now(); // 觸發後重置，避免重複觸發
     }
 }
 
@@ -163,9 +190,7 @@ async function handleRoomEntry() {
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
-            // 如果房間存在且密碼正確，直接登入
             if (doc.data().password === password) {
-                // 檢查暱稱是否重複
                 if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                     if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
                         resetEntryButton(); return;
@@ -176,7 +201,6 @@ async function handleRoomEntry() {
                     expireAt: expireDate
                 });
             } else {
-                // 如果房間存在但密碼錯誤，才跳出原本的佔用提醒
                 const confirmed = confirm(`📢 通知：房間代碼「${roomId}」已被佔用。\n\n加入家人房間按「確定」；建立新房請按「取消」。`);
                 if (!confirmed) { resetEntryButton(); return; }
                 
@@ -219,7 +243,6 @@ function updateUIForChat() {
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
     
-    // ⭐ 顯示總結按鈕
     const sumBtn = document.getElementById('generateSummaryBtn');
     if(sumBtn) sumBtn.classList.remove('hidden');
 
@@ -229,7 +252,6 @@ function updateUIForChat() {
     lastRoomActivityTime = Date.now();
 }
 
-// 💬 訊息顯示邏輯
 function displayMessage(content, type, senderName, timestamp) {
     if (typeof content !== 'string') return;
     const displayContent = content.replace('[TRIGGER_PLEDGE]', '').replace('[AI_SUCCESS_REPLY]', ''); 
@@ -275,7 +297,6 @@ function startChatListener(roomId) {
         .onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
-                // ⭐ 同步最新在線名單，給總結功能使用
                 roomActiveUsersList = data.active_users || [];
                 currentRoomUserCount = roomActiveUsersList.length;
                 
@@ -321,24 +342,17 @@ function startChatListener(roomId) {
         });
 }
 
-// =================================================================
-// ⭐ 新增：個人化總結報告 (壓軸亮點)
-// =================================================================
 async function generateSummaryReport() {
-    // 防呆：如果都還沒聊天，不給總結
     if (conversationHistory.length < 2) {
         alert("目前的對話還太少，請多聊幾句再讓我幫你們總結喔！");
         return;
     }
 
-    // 1. 顯示溫馨的 Loading 彈窗
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
 
-    // 2. 只抓取最新 40 筆紀錄，避免超過 API 負載
     const historyText = conversationHistory.slice(-40).map(m => `${m.name}: ${m.text}`).join('\n');
-    const usersStr = roomActiveUsersList.join('、');
+    const usersStr = roomActiveUsersList.length > 0 ? roomActiveUsersList.join('、') : "全體成員";
 
-    // 3. 嚴格的 JSON Prompt 結構設計
     const prompt = `
     你現在是經驗豐富的家庭諮商師。請閱讀以下對話紀錄，並為房間內的每位成員 (${usersStr}) 產生一份專屬的溝通總結。
     對話紀錄：
@@ -346,47 +360,45 @@ async function generateSummaryReport() {
 
     要求：
     1. 針對名單上的每個人，分別寫出他們在對話中的「內心渴望 (thoughts)」與「溫暖建議 (advice)」。
-    2. 防呆機制：若某人在對話中發言極少或未發言，請不要捏造，改以溫暖口吻鼓勵（例如：「這次多為聆聽，建議下次多分享感受...」）。
-    3. 必須嚴格輸出為 JSON 格式，不要包含任何 markdown 標記 (如 \`\`\`json)，直接輸出純 JSON 字串。
-    
-    格式必須完全符合以下結構：
+    2. 防呆機制：若某人在對話中發言極少或未發言，請不要捏造，改以溫暖口吻鼓勵。
+    3. 必須嚴格輸出為 JSON 格式，完全符合以下結構：
     {
       "overall": "用 50 字總結這次家庭對話的整體氛圍與核心問題。",
       "cards": [
-        { "name": "名單上的人名", "role": "他在對話中的角色(如:主要表達者/聆聽者)", "thoughts": "他的心聲解讀...", "advice": "給他的溫暖建議..." }
+        { "name": "名單上的人名", "role": "他在對話中的角色", "thoughts": "他的心聲解讀...", "advice": "給他的溫暖建議..." }
       ]
     }`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 2000 } })
+            body: JSON.stringify({ 
+                contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                generationConfig: { 
+                    temperature: 0.5, 
+                    maxOutputTokens: 2000,
+                    responseMimeType: "application/json" 
+                } 
+            })
         });
         
         const data = await response.json();
-        let aiText = data.candidates[0].content.parts[0].text;
-        
-        // 清理可能出現的 markdown 格式，確保能順利 Parse JSON
-        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const firstBrace = aiText.indexOf('{');
-        const lastBrace = aiText.lastIndexOf('}');
-        if(firstBrace !== -1 && lastBrace !== -1){
-            aiText = aiText.substring(firstBrace, lastBrace + 1);
+        if (!data.candidates || data.candidates.length === 0) {
+            throw new Error("AI API 未回傳有效資料");
         }
         
-        const result = JSON.parse(aiText);
+        const aiText = data.candidates[0].content.parts[0].text;
+        const result = JSON.parse(aiText); 
         renderSummaryCards(result);
 
     } catch (e) {
-        console.error("總結失敗", e);
+        console.error("總結失敗細節:", e);
         alert("分析報告時遇到一點小阻礙，請稍後再試一次！");
     } finally {
-        // 隱藏 Loading 彈窗
         document.getElementById('summaryLoadingModal').classList.add('hidden');
     }
 }
 
-// 將 JSON 資料渲染成精美卡片
 function renderSummaryCards(data) {
     document.getElementById('summaryOverallText').textContent = data.overall;
     const container = document.getElementById('summaryCardsContainer');
@@ -394,7 +406,6 @@ function renderSummaryCards(data) {
 
     data.cards.forEach(card => {
         const cardDiv = document.createElement('div');
-        // 卡片設計：圓角、陰影、漸層邊框
         cardDiv.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange transition-transform hover:-translate-y-1";
         cardDiv.innerHTML = `
             <div class="flex items-center gap-3 mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
@@ -417,13 +428,11 @@ function renderSummaryCards(data) {
         `;
         container.appendChild(cardDiv);
     });
-
-    // 顯示結果視窗
     document.getElementById('summaryResultModal').classList.remove('hidden');
 }
 
 
-// 🧠 AI 偵測機制 (完整保留)
+// 🧠 AI 偵測機制
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
