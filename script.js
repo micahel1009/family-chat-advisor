@@ -1,9 +1,9 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】請在這裡換上您「最新」的 Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyA-Cy"; 
-const KEY_PART_2 = "nl01Q2US1d9ODRBgFgrsAFAfvR4dE";
-const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
+const KEY_PART_1 = "sk-proj-qLTmgXUSoLlOV_CefUiIgsJ33kdkXcMmesxqCAJLrBwTiUZIJPWhsF4fXh4aMjc9vEKt5nX"; 
+const KEY_PART_2 = "wXyT3BlbkFJedAsqfCxyMXRzjeMdEsm14QD0bIIFoPC0q6JyDDUClGH1aYLQDtI6Pyohz1zLotQhuVbkQgyIA";
+const OPENAI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
 const firebaseConfig = {
