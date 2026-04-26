@@ -163,14 +163,27 @@ async function handleRoomEntry() {
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
-            const confirmed = confirm(`📢 通知：房間代碼「${roomId}」已被佔用。\n\n加入家人房間按「確定」；建立新房請按「取消」。`);
-            if (!confirmed) { resetEntryButton(); return; }
-            if (doc.data().password !== password) { alert("❌ 密碼錯誤！"); resetEntryButton(); return; }
-            
-            await roomDocRef.update({
-                active_users: firebase.firestore.FieldValue.arrayUnion(userName),
-                expireAt: expireDate
-            });
+            // 如果房間存在且密碼正確，直接登入
+            if (doc.data().password === password) {
+                // 檢查暱稱是否重複
+                if (doc.data().active_users && doc.data().active_users.includes(userName)) {
+                    if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
+                        resetEntryButton(); return;
+                    }
+                }
+                await roomDocRef.update({
+                    active_users: firebase.firestore.FieldValue.arrayUnion(userName),
+                    expireAt: expireDate
+                });
+            } else {
+                // 如果房間存在但密碼錯誤，才跳出原本的佔用提醒
+                const confirmed = confirm(`📢 通知：房間代碼「${roomId}」已被佔用。\n\n加入家人房間按「確定」；建立新房請按「取消」。`);
+                if (!confirmed) { resetEntryButton(); return; }
+                
+                alert("❌ 密碼錯誤！");
+                resetEntryButton(); 
+                return;
+            }
         } else {
             await roomDocRef.set({
                 password: password,
