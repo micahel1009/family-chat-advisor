@@ -2,8 +2,8 @@
 // 🚨🚨🚨 【防封鎖設定】ChatGPT (OpenAI) API 金鑰 🚨🚨🚨
 // 請將你的 OpenAI 金鑰 (通常是 sk- 開頭) 拆成兩半貼在下方
 // =================================================================
-const KEY_PART_1 = "sk-proj-qLTmgXUSoLlOV_CefUiIgsJ33kdkXcMmesxqCAJLrBwTiUZIJPWhsF4fXh4aMjc9vEKt5nX"; 
-const KEY_PART_2 = "wXyT3BlbkFJedAsqfCxyMXRzjeMdEsm14QD0bIIFoPC0q6JyDDUClGH1aYLQDtI6Pyohz1zLotQhuVbkQgyIA";
+const KEY_PART_1 = "sk-proj-請換成你的前半段"; 
+const KEY_PART_2 = "請換成你的後半段";
 const OPENAI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定 (保持不變)
@@ -337,7 +337,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
                 'Authorization': `Bearer ${OPENAI_API_KEY}`
             },
             body: JSON.stringify({ 
-                model: "gpt-4o-mini", // 使用 OpenAI 最新、最快且便宜的模型
+                model: "gpt-4o-mini", 
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.7
             })
@@ -405,7 +405,7 @@ async function generateSummaryReport() {
                 model: "gpt-4o-mini",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.5, 
-                response_format: { type: "json_object" } // OpenAI 專屬：強制回應 JSON
+                response_format: { type: "json_object" } 
             })
         });
         
@@ -422,7 +422,7 @@ async function generateSummaryReport() {
 
     } catch (e) {
         console.error("總結失敗細節:", e);
-        if (e.message.includes("API 拒絕存取")) {
+        if (e.message && e.message.includes("API 拒絕存取")) {
             alert("抱歉，目前您的 OpenAI API Key 額度已滿或無效，請檢查金鑰設定。");
         } else {
             alert("分析報告時遇到一點小阻礙，請稍後再試一次！");
