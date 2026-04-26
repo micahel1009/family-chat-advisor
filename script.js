@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCR-U"; 
-const KEY_PART_2 = "W_oYFsvuT3ys8LkXqTxolTDXyV9ok";
+const KEY_PART_1 = "AIzaSyCwVW"; 
+const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
 const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
@@ -53,7 +53,7 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
-// 在線人數與名單
+// 在線人數與名單 (用於 AI 總結與打字偵測)
 let currentRoomUserCount = 0;
 let roomActiveUsersList = []; 
 let typingUsersList = [];
@@ -78,11 +78,13 @@ window.onload = function() {
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
     
+    // ⭐ 總結報告按鈕監聽
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');
     if (generateSummaryBtn) {
         generateSummaryBtn.addEventListener('click', generateSummaryReport);
     }
 
+    // ⭐ 輸入偵測邏輯
     if(userInput) {
         userInput.addEventListener('input', () => {
             updateTypingStatus(true);
@@ -95,6 +97,7 @@ window.onload = function() {
             }
             lastRoomActivityTime = Date.now();
         });
+        
         userInput.addEventListener('blur', () => updateTypingStatus(false));
     }
 
@@ -115,6 +118,7 @@ window.onload = function() {
     setInterval(checkIdleAndTriggerPledge, 5000);
 };
 
+// 關閉網頁時自動清除打字狀態
 window.addEventListener('beforeunload', () => {
     if (currentRoomId && currentUserName) {
         db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId)
@@ -122,6 +126,7 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// ⭐ 打字狀態同步
 async function updateTypingStatus(isTyping) {
     if (!currentRoomId || !currentUserName) return;
     const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId);
@@ -133,12 +138,12 @@ async function updateTypingStatus(isTyping) {
         } else {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayRemoving(currentUserName) });
         }
-    } catch (e) { console.warn("打字同步略過"); }
+    } catch (e) { 
+        console.warn("打字同步略過"); 
+    }
 }
 
-// =================================================================
-// ⭐ 核心修改區：冷場偵測改為「呼叫 AI 分析」，而不是直接跳視窗
-// =================================================================
+// ⭐ 冷場偵測 (修正：交由 AI 總結帶出破冰)
 function checkIdleAndTriggerPledge() {
     if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
     
@@ -162,14 +167,13 @@ function checkIdleAndTriggerPledge() {
         if (conversationHistory.length > 0) {
             // 抓取最後一則訊息，呼叫已寫好的 AI 翻譯/總結機制
             const lastMsg = conversationHistory[conversationHistory.length - 1];
-            // 使用 summary 模式，AI 會分析紀錄並自動帶出破冰標籤
             triggerAIPrompt("summary", lastMsg.text, lastMsg.name);
         } else {
-            // 如果完全沒人講過話就冷場，才直接跳出破冰視窗
+            // 完全沒人講話才直接跳視窗
             showPledgeModal();
         }
         
-        lastRoomActivityTime = Date.now(); // 觸發後重置，避免重複觸發
+        lastRoomActivityTime = Date.now(); // 觸發後重置
     }
 }
 
@@ -179,7 +183,10 @@ async function handleRoomEntry() {
     const password = roomPasswordInput.value.trim();
     const userName = userNameInput.value.trim();
 
-    if (roomId.length < 4 || !password || !userName) { alert("請完整輸入房間資訊！"); return; }
+    if (roomId.length < 4 || !password || !userName) { 
+        alert("請完整輸入房間資訊！"); 
+        return; 
+    }
 
     startChatButton.disabled = true;
     startChatButton.textContent = "驗證中...";
@@ -190,10 +197,12 @@ async function handleRoomEntry() {
         const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
 
         if (doc.exists) {
+            // 如果密碼正確，直接進入
             if (doc.data().password === password) {
                 if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                     if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
-                        resetEntryButton(); return;
+                        resetEntryButton(); 
+                        return;
                     }
                 }
                 await roomDocRef.update({
@@ -201,8 +210,12 @@ async function handleRoomEntry() {
                     expireAt: expireDate
                 });
             } else {
+                // 密碼錯誤才擋人
                 const confirmed = confirm(`📢 通知：房間代碼「${roomId}」已被佔用。\n\n加入家人房間按「確定」；建立新房請按「取消」。`);
-                if (!confirmed) { resetEntryButton(); return; }
+                if (!confirmed) { 
+                    resetEntryButton(); 
+                    return; 
+                }
                 
                 alert("❌ 密碼錯誤！");
                 resetEntryButton(); 
@@ -238,6 +251,7 @@ function resetEntryButton() {
 
 function updateUIForChat() {
     if(roomEntryScreen) roomEntryScreen.style.display = 'none';
+    
     userInput.disabled = false;
     userInput.placeholder = "輸入訊息內容..."; 
     sendButton.disabled = false;
@@ -252,6 +266,7 @@ function updateUIForChat() {
     lastRoomActivityTime = Date.now();
 }
 
+// 💬 訊息顯示邏輯
 function displayMessage(content, type, senderName, timestamp) {
     if (typeof content !== 'string') return;
     const displayContent = content.replace('[TRIGGER_PLEDGE]', '').replace('[AI_SUCCESS_REPLY]', ''); 
@@ -263,19 +278,33 @@ function displayMessage(content, type, senderName, timestamp) {
     
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
-    if (content.includes("已宣誓破冰")) bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
+    
+    if (content.includes("已宣誓破冰")) {
+        bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
+    }
 
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${type === 'user' ? 'items-end' : 'items-start'}`;
-    wrapper.innerHTML = `<div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div>
-                         <div class="p-4 rounded-2xl max-w-md ${bubbleClass}">${cleanedContent}</div>`;
+    wrapper.innerHTML = `
+        <div class="text-xs text-gray-500 mb-1 flex gap-2">
+            <strong>${senderName}</strong><span>${timeStr}</span>
+        </div>
+        <div class="p-4 rounded-2xl max-w-md ${bubbleClass}">
+            ${cleanedContent}
+        </div>
+    `;
 
     const icon = document.createElement('div');
     icon.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${senderName.includes('Re:Family') ? 'bg-warm-peach' : 'bg-gray-300'}`;
     icon.innerHTML = senderName.includes('Re:Family') ? '<i class="fas fa-heart text-white"></i>' : '<i class="fas fa-user text-gray-600"></i>';
 
-    if (type !== 'user') { messageContainer.appendChild(icon); messageContainer.appendChild(wrapper); } 
-    else { messageContainer.appendChild(wrapper); messageContainer.appendChild(icon); }
+    if (type !== 'user') { 
+        messageContainer.appendChild(icon); 
+        messageContainer.appendChild(wrapper); 
+    } else { 
+        messageContainer.appendChild(wrapper); 
+        messageContainer.appendChild(icon); 
+    }
 
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
@@ -287,6 +316,7 @@ let pledgeCount = 0;
 
 function startChatListener(roomId) {
     if (!db) return;
+    
     chatArea.innerHTML = '';
     displayedMessageIds = new Set();
     conversationHistory = [];
@@ -297,6 +327,7 @@ function startChatListener(roomId) {
         .onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
+                
                 roomActiveUsersList = data.active_users || [];
                 currentRoomUserCount = roomActiveUsersList.length;
                 
@@ -316,25 +347,41 @@ function startChatListener(roomId) {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
                     const msg = change.doc.data();
+                    
                     if (!displayedMessageIds.has(change.doc.id)) {
                         displayedMessageIds.add(change.doc.id);
-                        lastRoomActivityTime = Date.now();
+                        
+                        // ⭐ 判斷是否為剛發出的新訊息
+                        const isBrandNewMessage = (Date.now() - msg.timestamp) < 5000;
+                        
+                        if (isBrandNewMessage) {
+                            lastRoomActivityTime = Date.now();
+                        }
+                        
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
 
                         if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) {
                             setTimeout(() => { if (Date.now() - msg.timestamp < 60000) showPledgeModal(); }, 1000);
                         }
+                        
                         if (msg.text.includes("我希望破冰")) {
                             pledgeCount++;
-                            if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000 && isMe) triggerSuccessAI();
+                            if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000 && isMe) {
+                                triggerSuccessAI();
+                            }
                         }
 
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
+                        
                         if (msg.senderId !== 'AI') {
                             conversationHistory.push({ role: 'user', name: msg.senderName, text: msg.text });
-                            conversationCount++;
-                            if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
+                            
+                            // ⭐ 只有真正的新訊息才會累加計數與觸發 AI
+                            if (isBrandNewMessage) {
+                                conversationCount++;
+                                if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
+                            }
                         }
                     }
                 }
@@ -342,6 +389,67 @@ function startChatListener(roomId) {
         });
 }
 
+// 🧠 AI 偵測機制 
+async function checkAndTriggerAI(lastText, senderName) {
+    const now = Date.now();
+    if (now - lastAIMessageTime < 8000) return;
+
+    const generalTriggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "態度", "閉嘴", "垃圾", "理由", "藉口", "囉嗦", "不懂", "隨便"];
+    const pressureTriggers = ["現實", "房租", "保險", "錢", "未來", "以後", "為你好", "擔心", "失望", "比較", "別人", "努力", "辛苦", "長大", "賺錢", "花錢", "生活費"];
+    const deepNeedsTriggers = ["當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"];
+    const deadlockTriggers = ["內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累", "不想講了", "算了"];
+
+    const isGeneral = generalTriggers.some(k => lastText.includes(k));
+    const isPressure = pressureTriggers.some(k => lastText.includes(k));
+    const isDeep = deepNeedsTriggers.some(k => lastText.includes(k));
+    const isDeadlock = deadlockTriggers.some(k => lastText.includes(k));
+
+    if (isGeneral || isPressure || isDeep || isDeadlock || conversationCount % 3 === 0) {
+        lastAIMessageTime = now;
+        let mode = (isDeep || isDeadlock) ? "summary" : "translate"; 
+        await triggerAIPrompt(mode, lastText, senderName);
+    }
+}
+
+async function triggerAIPrompt(mode, lastText, senderName) {
+    if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+    
+    const historyText = conversationHistory.slice(-8).map(m => `${m.name}: ${m.text}`).join('\n');
+    let prompt = mode === "summary" ? 
+        `你現在是「Re:Family」的資深家庭調解員。對話紀錄：${historyText}。任務：請總結雙方目前的心聲，轉化成 100 到 250 字之間的溫暖解析。⛔絕對禁止：術語。指令：告知輸入破冰字句並加標籤 [TRIGGER_PLEDGE]` : 
+        `你現在是「Re:Family」的家庭溝通翻譯官。上下文：${historyText}。最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成「背後的善意或需求」，限100字內，語氣溫柔。`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } 
+            })
+        });
+        
+        const data = await response.json();
+        
+        // 防錯機制
+        if (!data.candidates || data.candidates.length === 0) {
+            console.error("AI 翻譯回傳異常:", data);
+            return; 
+        }
+        
+        const aiText = data.candidates[0].content.parts[0].text;
+        await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
+        
+    } catch (e) { 
+        console.error("AI 連線失敗:", e); 
+    } finally { 
+        if (loadingIndicator) loadingIndicator.classList.add('hidden'); 
+    }
+}
+
+// =================================================================
+// ⭐ 個人化總結報告
+// =================================================================
 async function generateSummaryReport() {
     if (conversationHistory.length < 2) {
         alert("目前的對話還太少，請多聊幾句再讓我幫你們總結喔！");
@@ -371,13 +479,14 @@ async function generateSummaryReport() {
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 contents: [{ role: "user", parts: [{ text: prompt }] }], 
                 generationConfig: { 
                     temperature: 0.5, 
-                    maxOutputTokens: 2000,
-                    responseMimeType: "application/json" 
+                    maxOutputTokens: 2000, 
+                    responseMimeType: "application/json" // ⭐ 強制 JSON
                 } 
             })
         });
@@ -428,69 +537,32 @@ function renderSummaryCards(data) {
         `;
         container.appendChild(cardDiv);
     });
+    
     document.getElementById('summaryResultModal').classList.remove('hidden');
-}
-
-
-// 🧠 AI 偵測機制
-async function checkAndTriggerAI(lastText, senderName) {
-    const now = Date.now();
-    if (now - lastAIMessageTime < 8000) return;
-
-    const generalTriggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "態度", "閉嘴", "垃圾", "理由", "藉口", "囉嗦", "不懂", "隨便"];
-    const pressureTriggers = ["現實", "房租", "保險", "錢", "未來", "以後", "為你好", "擔心", "失望", "比較", "別人", "努力", "辛苦", "長大", "賺錢", "花錢", "生活費"];
-    const deepNeedsTriggers = ["當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"];
-    const deadlockTriggers = ["內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累", "不想講了", "算了"];
-
-    const isGeneral = generalTriggers.some(k => lastText.includes(k));
-    const isPressure = pressureTriggers.some(k => lastText.includes(k));
-    const isDeep = deepNeedsTriggers.some(k => lastText.includes(k));
-    const isDeadlock = deadlockTriggers.some(k => lastText.includes(k));
-
-    if (isGeneral || isPressure || isDeep || isDeadlock || conversationCount % 3 === 0) {
-        lastAIMessageTime = now;
-        let mode = (isDeep || isDeadlock) ? "summary" : "translate"; 
-        await triggerAIPrompt(mode, lastText, senderName);
-    }
-}
-
-async function triggerAIPrompt(mode, lastText, senderName) {
-    if (loadingIndicator) loadingIndicator.classList.remove('hidden');
-    const historyText = conversationHistory.slice(-8).map(m => `${m.name}: ${m.text}`).join('\n');
-    let prompt = mode === "summary" ? 
-        `你現在是「Re:Family」的資深家庭調解員。對話紀錄：${historyText}。任務：請總結雙方目前的心聲，轉化成 100 到 250 字之間的溫暖解析。⛔絕對禁止：術語。指令：告知輸入破冰字句並加標籤 [TRIGGER_PLEDGE]` : 
-        `你現在是「Re:Family」的家庭溝通翻譯官。上下文：${historyText}。最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成「背後的善意或需求」，限100字內，語氣溫柔。`;
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
-        });
-        const data = await response.json();
-        const aiText = data.candidates[0].content.parts[0].text;
-        await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
-    } catch (e) { console.error(e); } finally { if (loadingIndicator) loadingIndicator.classList.add('hidden'); }
 }
 
 async function triggerSuccessAI() {
     const successMsg = "謝謝你們體諒彼此，一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
     await sendToDatabase(successMsg, 'AI', 'Re:Family 智能助手', currentRoomId);
+    
     if(confettiContainer) {
         confettiContainer.classList.remove('hidden');
         for(let i=0; i<100; i++) {
             const c = document.createElement('div');
-            c.className = 'confetti'; c.style.left = Math.random()*100+'vw';
+            c.className = 'confetti'; 
+            c.style.left = Math.random()*100+'vw';
             c.style.backgroundColor = ['#FF8A65','#FFAB91','#F8BBD9'][Math.floor(Math.random()*3)];
             c.style.animationDuration = (Math.random()*3+2)+'s';
             confettiContainer.appendChild(c);
         }
-        setTimeout(()=>confettiContainer.classList.add('hidden'), 6000);
+        setTimeout(() => confettiContainer.classList.add('hidden'), 6000);
     }
 }
 
 function showPledgeModal() { 
     if (pledgeModal) {
-        pledgeModal.classList.remove('hidden'); pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
+        pledgeModal.classList.remove('hidden'); 
+        pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
         submitPledgeButton.disabled = false;
         submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg";
     }
@@ -531,4 +603,8 @@ async function sendToDatabase(text, senderId, senderName, roomId) {
     });
 }
 
-function handleLeaveRoom() { updateTypingStatus(false); localStorage.clear(); window.location.reload(); }
+function handleLeaveRoom() { 
+    updateTypingStatus(false); 
+    localStorage.clear(); 
+    window.location.reload(); 
+}
