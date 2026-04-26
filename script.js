@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCR-U"; 
-const KEY_PART_2 = "W_oYFsvuT3ys8LkXqTxolTDXyV9ok";
+const KEY_PART_1 = "AIzaSyBPvr"; 
+const KEY_PART_2 = "K6pCZZqkvwfyucHJCLYRkdy2DnZtQ";
 const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
