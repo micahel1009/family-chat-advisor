@@ -1,11 +1,12 @@
 // =================================================================
-// 🚨🚨🚨 【防封鎖設定】請在這裡換上您「最新」的 Gemini API 金鑰 🚨🚨🚨
+// 🚨🚨🚨 【防封鎖設定】ChatGPT (OpenAI) API 金鑰 🚨🚨🚨
+// 請將你的 OpenAI 金鑰 (通常是 sk- 開頭) 拆成兩半貼在下方
 // =================================================================
-const KEY_PART_1 = "sk-proj-qLTmgXUSoLlOV_CefUiIgsJ33kdkXcMmesxqCAJLrBwTiUZIJPWhsF4fXh4aMjc9vEKt5nX"; 
-const KEY_PART_2 = "wXyT3BlbkFJedAsqfCxyMXRzjeMdEsm14QD0bIIFoPC0q6JyDDUClGH1aYLQDtI6Pyohz1zLotQhuVbkQgyIA";
+const KEY_PART_1 = "sk-proj-請換成你的前半段"; 
+const KEY_PART_2 = "請換成你的後半段";
 const OPENAI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
-// Firebase 設定
+// Firebase 設定 (保持不變)
 const firebaseConfig = {
     apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
     authDomain: "familychatadvisor.firebaseapp.com",
@@ -35,13 +36,11 @@ const leaveRoomButton = document.getElementById('leaveRoomButton');
 const typingIndicator = document.getElementById('typingIndicator');
 const typingUserName = document.getElementById('typingUserName');
 
-// 破冰與特效
 const pledgeModal = document.getElementById('pledgeModal');
 const pledgeInput = document.getElementById('pledgeInput');
 const submitPledgeButton = document.getElementById('submitPledgeButton');
 const confettiContainer = document.getElementById('confettiContainer');
 
-// 狀態變數
 let currentUserName = localStorage.getItem('chatUserName') || null;
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
@@ -53,16 +52,12 @@ let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
-// 在線人數與名單 (用於 AI 總結與打字偵測)
 let currentRoomUserCount = 0;
 let roomActiveUsersList = []; 
 let typingUsersList = [];
 let typingTimeout = null;
 
-// 全域閒置計時器
 let lastRoomActivityTime = Date.now(); 
-
-// ⭐ 新增：判斷是否為第一次載入歷史訊息的開關
 let isInitialLoad = true; 
 
 // =================================================================
@@ -81,26 +76,15 @@ window.onload = function() {
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
     
-    // ⭐ 總結報告按鈕監聽
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');
-    if (generateSummaryBtn) {
-        generateSummaryBtn.addEventListener('click', generateSummaryReport);
-    }
+    if (generateSummaryBtn) generateSummaryBtn.addEventListener('click', generateSummaryReport);
 
-    // ⭐ 輸入偵測邏輯
     if(userInput) {
-        userInput.addEventListener('input', () => {
-            updateTypingStatus(true);
-        });
-
+        userInput.addEventListener('input', () => updateTypingStatus(true));
         userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                handleSendAction(); 
-            }
+            if (e.key === 'Enter') { e.preventDefault(); handleSendAction(); }
             lastRoomActivityTime = Date.now();
         });
-        
         userInput.addEventListener('blur', () => updateTypingStatus(false));
     }
 
@@ -121,7 +105,6 @@ window.onload = function() {
     setInterval(checkIdleAndTriggerPledge, 5000);
 };
 
-// 關閉網頁時自動清除打字狀態
 window.addEventListener('beforeunload', () => {
     if (currentRoomId && currentUserName) {
         db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId)
@@ -129,7 +112,6 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// ⭐ 打字狀態同步
 async function updateTypingStatus(isTyping) {
     if (!currentRoomId || !currentUserName) return;
     const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId);
@@ -141,56 +123,38 @@ async function updateTypingStatus(isTyping) {
         } else {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayRemoving(currentUserName) });
         }
-    } catch (e) { 
-        console.warn("打字同步略過"); 
-    }
+    } catch (e) { console.warn("打字同步略過"); }
 }
 
-// ⭐ 冷場偵測
 function checkIdleAndTriggerPledge() {
     if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
-    
-    // 只有 1 人時，無限重置計時器
     if (currentRoomUserCount < 2) {
         lastRoomActivityTime = Date.now();
         return;
     }
 
     const idleTime = Date.now() - lastRoomActivityTime;
+    if (typingUsersList.length > 0 && idleTime < 90000) return;
 
-    // 若有人打字，給予最多 90 秒的寬容期
-    if (typingUsersList.length > 0 && idleTime < 90000) {
-        return;
-    }
-
-    // 閒置超過 60 秒 (無人打字) 或 狀態卡死超過 90 秒
     if (idleTime > 60000) { 
         console.log("偵測到冷場，交由 AI 分析目前對話！");
-        
         if (conversationHistory.length > 0) {
             const lastMsg = conversationHistory[conversationHistory.length - 1];
             triggerAIPrompt("summary", lastMsg.text, lastMsg.name);
         } else {
             showPledgeModal();
         }
-        
         lastRoomActivityTime = Date.now(); 
     }
 }
 
-// 🏠 房間進入
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
     const password = roomPasswordInput.value.trim();
     const userName = userNameInput.value.trim();
 
-    if (roomId.length < 4 || !password || !userName) { 
-        alert("請完整輸入房間資訊！"); 
-        return; 
-    }
-
-    startChatButton.disabled = true;
-    startChatButton.textContent = "驗證中...";
+    if (roomId.length < 4 || !password || !userName) { alert("請完整輸入房間資訊！"); return; }
+    startChatButton.disabled = true; startChatButton.textContent = "驗證中...";
 
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
@@ -200,72 +164,39 @@ async function handleRoomEntry() {
         if (doc.exists) {
             if (doc.data().password === password) {
                 if (doc.data().active_users && doc.data().active_users.includes(userName)) {
-                    if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) {
-                        resetEntryButton(); 
-                        return;
-                    }
+                    if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) { resetEntryButton(); return; }
                 }
-                await roomDocRef.update({
-                    active_users: firebase.firestore.FieldValue.arrayUnion(userName),
-                    expireAt: expireDate
-                });
+                await roomDocRef.update({ active_users: firebase.firestore.FieldValue.arrayUnion(userName), expireAt: expireDate });
             } else {
                 const confirmed = confirm(`📢 通知：房間代碼「${roomId}」已被佔用。\n\n加入家人房間按「確定」；建立新房請按「取消」。`);
-                if (!confirmed) { 
-                    resetEntryButton(); 
-                    return; 
-                }
-                
-                alert("❌ 密碼錯誤！");
-                resetEntryButton(); 
-                return;
+                if (!confirmed) { resetEntryButton(); return; }
+                alert("❌ 密碼錯誤！"); resetEntryButton(); return;
             }
         } else {
-            await roomDocRef.set({
-                password: password,
-                created_at: firebase.firestore.FieldValue.serverTimestamp(),
-                expireAt: expireDate,
-                active_users: [userName],
-                typing_users: []
-            });
+            await roomDocRef.set({ password: password, created_at: firebase.firestore.FieldValue.serverTimestamp(), expireAt: expireDate, active_users: [userName], typing_users: [] });
         }
 
-        currentRoomId = roomId;
-        currentUserName = userName;
-        localStorage.setItem('chatRoomId', currentRoomId);
-        localStorage.setItem('chatUserName', currentUserName);
+        currentRoomId = roomId; currentUserName = userName;
+        localStorage.setItem('chatRoomId', currentRoomId); localStorage.setItem('chatUserName', currentUserName);
         startChatListener(currentRoomId);
         updateUIForChat();
-
-    } catch (error) {
-        alert("連線失敗");
-        resetEntryButton();
-    }
+    } catch (error) { alert("連線失敗"); resetEntryButton(); }
 }
 
-function resetEntryButton() {
-    startChatButton.disabled = false;
-    startChatButton.textContent = "開始群聊";
-}
+function resetEntryButton() { startChatButton.disabled = false; startChatButton.textContent = "開始群聊"; }
 
 function updateUIForChat() {
     if(roomEntryScreen) roomEntryScreen.style.display = 'none';
-    
-    userInput.disabled = false;
-    userInput.placeholder = "輸入訊息內容..."; 
-    sendButton.disabled = false;
+    userInput.disabled = false; userInput.placeholder = "輸入訊息內容..."; sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
-    
     const sumBtn = document.getElementById('generateSummaryBtn');
     if(sumBtn) sumBtn.classList.remove('hidden');
-
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
     chatArea.innerHTML = '';
     displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴，協助大家溝通。`, 'system', 'Re:Family');
     lastRoomActivityTime = Date.now();
 }
 
-// 💬 訊息顯示邏輯
 function displayMessage(content, type, senderName, timestamp) {
     if (typeof content !== 'string') return;
     const displayContent = content.replace('[TRIGGER_PLEDGE]', '').replace('[AI_SUCCESS_REPLY]', ''); 
@@ -281,56 +212,42 @@ function displayMessage(content, type, senderName, timestamp) {
     if (content.includes("已宣誓破冰")) {
         bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
     } else if (type === 'system' && content.includes("系統提示")) {
-        // ⭐ AI 錯誤的特別樣式
         bubbleClass = 'bg-red-100 text-red-800 border border-red-200';
     }
 
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${type === 'user' ? 'items-end' : 'items-start'}`;
     wrapper.innerHTML = `
-        <div class="text-xs text-gray-500 mb-1 flex gap-2">
-            <strong>${senderName}</strong><span>${timeStr}</span>
-        </div>
-        <div class="p-4 rounded-2xl max-w-md ${bubbleClass}">
-            ${cleanedContent}
-        </div>
+        <div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div>
+        <div class="p-4 rounded-2xl max-w-md ${bubbleClass}">${cleanedContent}</div>
     `;
 
     const icon = document.createElement('div');
     icon.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${senderName.includes('Re:Family') ? 'bg-warm-peach' : 'bg-gray-300'}`;
     icon.innerHTML = senderName.includes('Re:Family') ? '<i class="fas fa-heart text-white"></i>' : '<i class="fas fa-user text-gray-600"></i>';
 
-    if (type !== 'user') { 
-        messageContainer.appendChild(icon); 
-        messageContainer.appendChild(wrapper); 
-    } else { 
-        messageContainer.appendChild(wrapper); 
-        messageContainer.appendChild(icon); 
-    }
+    if (type !== 'user') { messageContainer.appendChild(icon); messageContainer.appendChild(wrapper); } 
+    else { messageContainer.appendChild(wrapper); messageContainer.appendChild(icon); }
 
     chatArea.appendChild(messageContainer);
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// 🔥 Firestore 監聽 (已修復：完美防歷史訊息誤判)
 function startChatListener(roomId) {
     if (!db) return;
-    
     chatArea.innerHTML = '';
     displayedMessageIds = new Set();
     conversationHistory = [];
     conversationCount = 0;
     pledgeCount = 0;
-    isInitialLoad = true; // ⭐ 重置載入開關
+    isInitialLoad = true;
 
     db.collection(ROOMS_METADATA_COLLECTION).doc(roomId)
         .onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
-                
                 roomActiveUsersList = data.active_users || [];
                 currentRoomUserCount = roomActiveUsersList.length;
-                
                 typingUsersList = (data.typing_users || []).filter(u => u !== currentUserName);
                 if (typingUsersList.length > 0) {
                     typingUserName.textContent = typingUsersList.join(', ');
@@ -347,16 +264,11 @@ function startChatListener(roomId) {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
                     const msg = change.doc.data();
-                    
                     if (!displayedMessageIds.has(change.doc.id)) {
                         displayedMessageIds.add(change.doc.id);
                         
-                        // ⭐ 修正一：用開關取代容易出錯的時間差判斷！絕對精準。
                         const isBrandNewMessage = !isInitialLoad;
-                        
-                        if (isBrandNewMessage) {
-                            lastRoomActivityTime = Date.now();
-                        }
+                        if (isBrandNewMessage) lastRoomActivityTime = Date.now();
                         
                         const isMe = msg.senderId === sessionId;
                         const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
@@ -364,20 +276,15 @@ function startChatListener(roomId) {
                         if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) {
                             setTimeout(() => { if (Date.now() - msg.timestamp < 60000) showPledgeModal(); }, 1000);
                         }
-                        
                         if (msg.text.includes("我希望破冰")) {
                             pledgeCount++;
-                            if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000 && isMe) {
-                                triggerSuccessAI();
-                            }
+                            if (pledgeCount >= 2 && Date.now() - msg.timestamp < 10000 && isMe) triggerSuccessAI();
                         }
 
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
                         
                         if (msg.senderId !== 'AI') {
                             conversationHistory.push({ role: 'user', name: msg.senderName, text: msg.text });
-                            
-                            // ⭐ 只有真正剛發出去的新訊息才會累加計數與觸發 AI
                             if (isBrandNewMessage) {
                                 conversationCount++;
                                 if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
@@ -386,12 +293,10 @@ function startChatListener(roomId) {
                     }
                 }
             });
-            // ⭐ 處理完第一批歷史紀錄後，把開關關掉！接下來進來的都是新訊息
             isInitialLoad = false; 
         });
 }
 
-// 🧠 AI 偵測機制 
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
@@ -413,7 +318,9 @@ async function checkAndTriggerAI(lastText, senderName) {
     }
 }
 
-// ⭐ 修正二：解決 API 錯誤被「默默吃掉」的問題，直接顯示在聊天框
+// =================================================================
+// ⭐ OpenAI API 切換 (聊天分析)
+// =================================================================
 async function triggerAIPrompt(mode, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
     
@@ -423,30 +330,28 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         `你現在是「Re:Family」的家庭溝通翻譯官。上下文：${historyText}。最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成「背後的善意或需求」，限100字內，語氣溫柔。`;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://api.openai.com/v1/chat/completions`, {
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
             body: JSON.stringify({ 
-                contents: [{ role: "user", parts: [{ text: prompt }] }], 
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } 
+                model: "gpt-4o-mini", // 使用 OpenAI 最新、最快且便宜的模型
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7
             })
         });
         
         const data = await response.json();
         
-        // ⭐ 如果 API 失敗，會直接顯示在畫面上，而不是裝死
         if (data.error) {
-            console.error(`[AI 被阻擋] Google API 限制: ${data.error.message}`);
-            displayMessage(`[系統提示] AI 暫時無法連線，可能 API 權限未開啟或額度已滿。`, 'system', 'Re:Family');
+            console.error(`[AI 被阻擋] OpenAI API 限制: ${data.error.message}`);
+            displayMessage(`[系統提示] AI 暫時無法連線，請檢查 API Key 額度或設定。`, 'system', 'Re:Family');
             return;
         }
         
-        if (!data.candidates || data.candidates.length === 0) {
-            console.error("AI 翻譯回傳異常:", data);
-            return; 
-        }
-        
-        const aiText = data.candidates[0].content.parts[0].text;
+        const aiText = data.choices[0].message.content;
         await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
         
     } catch (e) { 
@@ -457,7 +362,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
 }
 
 // =================================================================
-// ⭐ 修正三：個人化總結報告 (強化錯誤報告與重置按鈕)
+// ⭐ OpenAI API 切換 (個人化總結報告)
 // =================================================================
 async function generateSummaryReport() {
     if (conversationHistory.length < 2) {
@@ -466,7 +371,7 @@ async function generateSummaryReport() {
     }
     
     const summaryBtn = document.getElementById('generateSummaryBtn');
-    if (summaryBtn) summaryBtn.disabled = true; // 防連點
+    if (summaryBtn) summaryBtn.disabled = true; 
 
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
 
@@ -490,38 +395,27 @@ async function generateSummaryReport() {
     }`;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://api.openai.com/v1/chat/completions`, {
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
             body: JSON.stringify({ 
-                contents: [{ role: "user", parts: [{ text: prompt }] }], 
-                generationConfig: { 
-                    temperature: 0.5, 
-                    maxOutputTokens: 2000, 
-                    responseMimeType: "application/json" // ⭐ 強制 JSON
-                } 
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.5, 
+                response_format: { type: "json_object" } // OpenAI 專屬：強制回應 JSON
             })
         });
         
         const data = await response.json();
         
-        // ⭐ 捕捉並明確顯示 API 失敗原因
         if (data.error) {
             throw new Error(`API 拒絕存取 (${data.error.message})`);
         }
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("AI API 未回傳有效資料");
-        }
         
-        let aiText = data.candidates[0].content.parts[0].text;
-        
-        // 確保清理任何殘留的 Markdown 標籤
-        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const firstBrace = aiText.indexOf('{');
-        const lastBrace = aiText.lastIndexOf('}');
-        if(firstBrace !== -1 && lastBrace !== -1){
-            aiText = aiText.substring(firstBrace, lastBrace + 1);
-        }
+        let aiText = data.choices[0].message.content;
         
         const result = JSON.parse(aiText); 
         renderSummaryCards(result);
@@ -529,13 +423,13 @@ async function generateSummaryReport() {
     } catch (e) {
         console.error("總結失敗細節:", e);
         if (e.message.includes("API 拒絕存取")) {
-            alert("抱歉，目前您的 API Key 權限不足或額度已用盡，請檢查金鑰設定。");
+            alert("抱歉，目前您的 OpenAI API Key 額度已滿或無效，請檢查金鑰設定。");
         } else {
             alert("分析報告時遇到一點小阻礙，請稍後再試一次！");
         }
     } finally {
         document.getElementById('summaryLoadingModal').classList.add('hidden');
-        if (summaryBtn) summaryBtn.disabled = false; // 解除連點鎖定
+        if (summaryBtn) summaryBtn.disabled = false; 
     }
 }
 
@@ -549,21 +443,12 @@ function renderSummaryCards(data) {
         cardDiv.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange transition-transform hover:-translate-y-1";
         cardDiv.innerHTML = `
             <div class="flex items-center gap-3 mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
-                <div class="w-12 h-12 bg-orange-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-warm-orange font-bold text-xl shadow-sm">
-                    ${card.name.charAt(0)}
-                </div>
-                <div>
-                    <h4 class="font-bold text-gray-800 dark:text-white text-lg">${card.name}</h4>
-                    <span class="text-xs text-warm-orange bg-orange-50 dark:bg-gray-700 border border-orange-100 dark:border-gray-600 px-2 py-1 rounded-full">${card.role}</span>
-                </div>
+                <div class="w-12 h-12 bg-orange-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-warm-orange font-bold text-xl shadow-sm">${card.name.charAt(0)}</div>
+                <div><h4 class="font-bold text-gray-800 dark:text-white text-lg">${card.name}</h4><span class="text-xs text-warm-orange bg-orange-50 dark:bg-gray-700 border border-orange-100 dark:border-gray-600 px-2 py-1 rounded-full">${card.role}</span></div>
             </div>
             <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
-                    <p><strong class="text-warm-orange flex items-center gap-2 mb-1"><i class="fas fa-heartbeat"></i> 內心渴望：</strong>${card.thoughts}</p>
-                </div>
-                <div class="bg-orange-50/50 dark:bg-gray-700/50 p-3 rounded-xl">
-                    <p><strong class="text-calm-blue flex items-center gap-2 mb-1"><i class="fas fa-lightbulb"></i> 專屬建議：</strong>${card.advice}</p>
-                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl"><p><strong class="text-warm-orange flex items-center gap-2 mb-1"><i class="fas fa-heartbeat"></i> 內心渴望：</strong>${card.thoughts}</p></div>
+                <div class="bg-orange-50/50 dark:bg-gray-700/50 p-3 rounded-xl"><p><strong class="text-calm-blue flex items-center gap-2 mb-1"><i class="fas fa-lightbulb"></i> 專屬建議：</strong>${card.advice}</p></div>
             </div>
         `;
         container.appendChild(cardDiv);
@@ -610,6 +495,7 @@ function handleSendAction() {
     if (!currentRoomId || !userText) return;
 
     if (userText.includes("破冰")) {
+        console.log("主動發送觸發：破冰");
         showPledgeModal();
         userInput.value = ""; 
         updateTypingStatus(false);
