@@ -1,10 +1,11 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】ChatGPT (OpenAI) API 金鑰 🚨🚨🚨
-// 請將你的 OpenAI 金鑰 (通常是 sk- 開頭) 拆成兩半貼在下方
 // =================================================================
 const KEY_PART_1 = "sk-proj-qLTmgXUSoLlOV_CefUiIgsJ33kdkXcMmesxqCAJLrBwTiUZIJPWhsF4fXh4aMjc9vEKt5nX"; 
 const KEY_PART_2 = "wXyT3BlbkFJedAsqfCxyMXRzjeMdEsm14QD0bIIFoPC0q6JyDDUClGH1aYLQDtI6Pyohz1zLotQhuVbkQgyIA";
-const OPENAI_API_KEY = KEY_PART_1 + KEY_PART_2;
+
+// ⭐ 終極防呆機制：自動清除任何不小心複製到的「隱形空白」或「非英文字元」！
+const OPENAI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x20-\x7E]/g, '');
 
 // Firebase 設定 (保持不變)
 const firebaseConfig = {
@@ -337,7 +338,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
                 'Authorization': `Bearer ${OPENAI_API_KEY}`
             },
             body: JSON.stringify({ 
-                model: "gpt-4o-mini", 
+                model: "gpt-4o-mini", // 使用 OpenAI 最新、最快且便宜的模型
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.7
             })
@@ -405,7 +406,7 @@ async function generateSummaryReport() {
                 model: "gpt-4o-mini",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.5, 
-                response_format: { type: "json_object" } 
+                response_format: { type: "json_object" } // OpenAI 專屬：強制回應 JSON
             })
         });
         
