@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【防封鎖設定】請在這裡換上您「最新」的 Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCwVW"; 
-const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
+const KEY_PART_1 = "AIzaSyBPOW"; 
+const KEY_PART_2 = "VJ0YL0y6u4tB4qyZMFwq2WnxukE1c";
 const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定
