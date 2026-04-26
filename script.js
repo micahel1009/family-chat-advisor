@@ -1,10 +1,10 @@
 // =================================================================
-// 🚨🚨🚨 【最終搶救】Google Gemini API 金鑰 🚨🚨🚨
+// 🚨🚨🚨 【最後希望：v1beta 修正版】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
 const KEY_PART_1 = "AIzaSyCXbq"; 
 const KEY_PART_2 = "DF72rle7726X_nTGOMyXO3A06ZwmQ";
 
-// ⭐ 強力除菌器：清除所有隱形字元與中文字，保證 fetch 不會報 ISO-8859-1 錯誤
+// ⭐ 強力殺菌器：自動清除亂碼
 const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
 
 // Firebase 設定
@@ -125,18 +125,17 @@ async function handleRoomEntry() {
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
-        const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); 
         if (doc.exists) {
             if (doc.data().password === password) {
                 if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                     if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) { resetEntryButton(); return; }
                 }
-                await roomDocRef.update({ active_users: firebase.firestore.FieldValue.arrayUnion(userName), expireAt: expireDate });
+                await roomDocRef.update({ active_users: firebase.firestore.FieldValue.arrayUnion(userName), expireAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) });
             } else {
-                alert("❌ 密碼錯誤或房間已被佔用！"); resetEntryButton(); return;
+                alert("❌ 密碼錯誤！"); resetEntryButton(); return;
             }
         } else {
-            await roomDocRef.set({ password: password, created_at: firebase.firestore.FieldValue.serverTimestamp(), expireAt: expireDate, active_users: [userName], typing_users: [] });
+            await roomDocRef.set({ password: password, created_at: firebase.firestore.FieldValue.serverTimestamp(), expireAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), active_users: [userName], typing_users: [] });
         }
         currentRoomId = roomId; currentUserName = userName;
         localStorage.setItem('chatRoomId', currentRoomId); localStorage.setItem('chatUserName', currentUserName);
@@ -186,9 +185,8 @@ function startChatListener(roomId) {
         if (doc.exists) {
             const data = doc.data(); roomActiveUsersList = data.active_users || []; currentRoomUserCount = roomActiveUsersList.length;
             typingUsersList = (data.typing_users || []).filter(u => u !== currentUserName);
-            if (typingUsersList.length > 0) {
-                typingUserName.textContent = typingUsersList.join(', '); typingIndicator.style.opacity = "1";
-            } else { typingIndicator.style.opacity = "0"; }
+            if (typingUsersList.length > 0) { typingUserName.textContent = typingUsersList.join(', '); typingIndicator.style.opacity = "1"; } 
+            else { typingIndicator.style.opacity = "0"; }
         }
     });
     db.collection('rooms').doc(roomId).collection('messages').orderBy('timestamp').limit(50).onSnapshot(snapshot => {
@@ -226,11 +224,11 @@ async function checkAndTriggerAI(lastText, senderName) {
     }
 }
 
-// ⭐ 網址修正：使用 v1beta 以支援 Flash 模型
+// ⭐ 關鍵修正：將 v1 改為 v1beta，這是目前唯一穩定的 Flash 模型網址！
 async function triggerAIPrompt(mode, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
     const hist = conversationHistory.slice(-8).map(m => `${m.name}: ${m.text}`).join('\n');
-    let prompt = mode === "summary" ? `你現在是資深調解員。總結並建議輸入破冰句並加標籤 [TRIGGER_PLEDGE]：\n${hist}` : `你現在是溝通翻譯官。將這句翻譯成背後的正義與愛：${senderName}: "${lastText}"`;
+    let prompt = mode === "summary" ? `你現在是資深家庭調解員。請用溫暖口吻總結目前衝突並建議輸入破冰句並加標籤 [TRIGGER_PLEDGE]：\n${hist}` : `你現在是溝通翻譯官。上下文：\n${hist}\n最後這句翻譯成「背後的善意需求」：${senderName}: "${lastText}"`;
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -244,10 +242,11 @@ async function triggerAIPrompt(mode, lastText, senderName) {
 }
 
 async function generateSummaryReport() {
-    if (conversationHistory.length < 2) { alert("對話太少！"); return; }
+    if (conversationHistory.length < 2) { alert("目前的對話還太少！"); return; }
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
     const hist = conversationHistory.slice(-40).map(m => `${m.name}: ${m.text}`).join('\n');
-    const prompt = `你現在是心理諮商師。針對成員(${roomActiveUsersList.join('、')})產生JSON格式總結。格式：{"overall":"...","cards":[{"name":"...","role":"...","thoughts":"...","advice":"..."}]}. 對話內容：\n${hist}`;
+    const users = roomActiveUsersList.length > 0 ? roomActiveUsersList.join('、') : "成員";
+    const prompt = `你現在是心理諮商師。根據對話：\n${hist}\n針對成員(${users})產生 JSON：{"overall":"...","cards":[{"name":"...","role":"...","thoughts":"...","advice":"..."}]}`;
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -255,7 +254,7 @@ async function generateSummaryReport() {
         });
         const data = await response.json();
         renderSummaryCards(JSON.parse(data.candidates[0].content.parts[0].text));
-    } catch (e) { alert("總結失敗"); }
+    } catch (e) { alert("總結失敗，請稍後再試！"); }
     finally { document.getElementById('summaryLoadingModal').classList.add('hidden'); }
 }
 
@@ -266,7 +265,7 @@ function renderSummaryCards(data) {
     data.cards.forEach(card => {
         const div = document.createElement('div');
         div.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange mb-4";
-        div.innerHTML = `<h4 class="font-bold">${card.name}</h4><p class="text-sm mt-2"><strong>渴望：</strong>${card.thoughts}</p><p class="text-sm mt-1"><strong>建議：</strong>${card.advice}</p>`;
+        div.innerHTML = `<h4 class="font-bold">${card.name} (${card.role})</h4><p class="text-sm mt-2"><strong>渴望：</strong>${card.thoughts}</p><p class="text-sm mt-1"><strong>建議：</strong>${card.advice}</p>`;
         container.appendChild(div);
     });
     document.getElementById('summaryResultModal').classList.remove('hidden');
@@ -275,7 +274,7 @@ function renderSummaryCards(data) {
 async function triggerSuccessAI() {
     await sendToDatabase("謝謝你們體諒彼此，一起約個時間出來聊聊天吧~ [AI_SUCCESS_REPLY]", 'AI', 'Re:Family 智能助手', currentRoomId);
     confettiContainer.classList.remove('hidden');
-    for(let i=0; i<80; i++) {
+    for(let i=0; i<100; i++) {
         const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random()*100+'vw';
         c.style.backgroundColor = ['#FF8A65','#FFAB91','#F8BBD9'][Math.floor(Math.random()*3)];
         c.style.animationDuration = (Math.random()*3+2)+'s'; confettiContainer.appendChild(c);
