@@ -2,8 +2,8 @@
 // 🚨🚨🚨 【防封鎖設定】ChatGPT (OpenAI) API 金鑰 🚨🚨🚨
 // 請將你的 OpenAI 金鑰 (通常是 sk- 開頭) 拆成兩半貼在下方
 // =================================================================
-const KEY_PART_1 = "sk-proj-請換成你的前半段"; 
-const KEY_PART_2 = "請換成你的後半段";
+const KEY_PART_1 = "sk-proj-qLTmgXUSoLlOV_CefUiIgsJ33kdkXcMmesxqCAJLrBwTiUZIJPWhsF4fXh4aMjc9vEKt5nX"; 
+const KEY_PART_2 = "wXyT3BlbkFJedAsqfCxyMXRzjeMdEsm14QD0bIIFoPC0q6JyDDUClGH1aYLQDtI6Pyohz1zLotQhuVbkQgyIA";
 const OPENAI_API_KEY = KEY_PART_1 + KEY_PART_2;
 
 // Firebase 設定 (保持不變)
