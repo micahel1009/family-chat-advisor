@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -112,7 +112,7 @@
             </div>
             <div class="relative">                
                 <div class="relative z-10">
-                    <img src="./news_refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="this.style.display='none'">
+                    <img src="./refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="this.style.display='none'">
                 </div>                                      
                 <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
                 <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
@@ -125,7 +125,7 @@
             <div class="text-center mb-16"><h2 class="text-4xl lg:text-5xl font-bold mb-6"><span class="bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">智能對話體驗 (群聊調解室)</span></h2></div>
             <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl chat-container-card" id="chat-widget-container">
                 
-                <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center justify-between relative z-20">
+                <div class="bg-gradient-to-r from-warm-orange to-warm-peach p-4 h-16 flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-heart text-white"></i></div>
                         <div>
@@ -140,12 +140,9 @@
                     </button>
                 </div>
 
-                <div id="loadingIndicator" class="hidden absolute top-16 left-0 right-0 z-10 bg-orange-50/90 dark:bg-gray-800/90 backdrop-blur-sm text-center text-sm font-bold text-warm-orange p-2 border-b border-orange-100 dark:border-gray-700 shadow-sm transition-all">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>AI 正在細心閱讀並思考回覆...
+                <div id="chatArea" class="chat-messages-area space-y-4">
+                    <div id="loadingIndicator" class="hidden text-center text-sm text-gray-500 dark:text-gray-400 p-2"><i class="fas fa-spinner fa-spin mr-2"></i>AI 正在分析...</div>
                 </div>
-
-                <div id="chatArea" class="chat-messages-area space-y-4"></div>
-                
                 <div id="roomEntryScreen">
                     <div class="max-w-xs mx-auto p-8 text-center w-full">
                         <div class="w-16 h-16 bg-warm-orange rounded-full mx-auto flex items-center justify-center mb-4 shadow-lg"><i class="fas fa-door-open text-2xl text-white"></i></div>
@@ -263,17 +260,24 @@
                 </h2>
                 <p id="summaryOverallText" class="text-center text-gray-700 dark:text-gray-300 mt-4 text-sm md:text-base font-medium leading-relaxed"></p>
             </div>
-            <div id="summaryCardsContainer" class="p-4 md:p-8 overflow-y-auto flex-grow space-y-4"></div>
+            
+            <div id="summaryCardsContainer" class="p-4 md:p-8 overflow-y-auto flex-grow space-y-4">
+                </div>
+            
             <div class="p-4 md:p-6 bg-white dark:bg-gray-800 border-t border-orange-200/50 dark:border-gray-700 flex flex-col sm:flex-row gap-3 justify-center flex-shrink-0 rounded-b-3xl">
-                <button onclick="document.getElementById('summaryResultModal').classList.add('hidden')" class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-all w-full sm:w-auto">先回到聊天室</button>
-                <button onclick="handleLeaveRoom()" class="px-6 py-3 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform w-full sm:w-auto flex items-center justify-center gap-2"><i class="fas fa-door-open"></i> 帶走收穫，離開房間</button>
+                <button onclick="document.getElementById('summaryResultModal').classList.add('hidden')" class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-all w-full sm:w-auto">
+                    先回到聊天室
+                </button>
+                <button onclick="handleLeaveRoom()" class="px-6 py-3 bg-gradient-to-r from-warm-orange to-warm-peach text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform w-full sm:w-auto flex items-center justify-center gap-2">
+                    <i class="fas fa-door-open"></i> 帶走收穫，離開房間
+                </button>
             </div>
         </div>
     </div>
 
     <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
 
-    <script src="script.js?v=CRITICAL_FINAL_FIX_V1"></script>
+    <script src="script.js?v=SUMMARY_UPDATE"></script>
     <script>        
         const themeToggle = document.getElementById('theme-toggle');        
         const html = document.documentElement;
