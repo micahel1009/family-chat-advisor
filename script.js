@@ -3,7 +3,6 @@
 // =================================================================
 const KEY_PART_1 = "AIzaSyCwVW"; 
 const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
-// ⭐ 微創手術一：加上 .replace 過濾器
 const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
 
 // Firebase 設定
@@ -48,20 +47,20 @@ let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
 
-let conversationHistory = []; 
 let conversationCount = 0;
 let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
 
-// 在線人數與名單 (用於 AI 總結與打字偵測)
+// 在線狀態
 let currentRoomUserCount = 0;
-let roomActiveUsersList = []; // ⭐ 新增：記錄房間有哪些人，給總結功能用
+let roomActiveUsersList = []; 
 let typingUsersList = [];
 let typingTimeout = null;
 
-// 全域閒置計時器
+// 閒置與 AI 介入控制旗標
 let lastRoomActivityTime = Date.now(); 
+let hasSent60sWarning = false;
 
 // =================================================================
 // ⭐ 初始化邏輯
@@ -79,13 +78,11 @@ window.onload = function() {
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
     
-    // ⭐ 總結報告按鈕監聽
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');
     if (generateSummaryBtn) {
         generateSummaryBtn.addEventListener('click', generateSummaryReport);
     }
 
-    // ⭐ 輸入偵測邏輯
     if(userInput) {
         userInput.addEventListener('input', () => {
             updateTypingStatus(true);
@@ -115,7 +112,9 @@ window.onload = function() {
     }
 
     if (submitPledgeButton) submitPledgeButton.addEventListener('click', handlePledgeSubmit);
-    setInterval(checkIdleAndTriggerPledge, 5000);
+    
+    // 5秒輪詢檢查 [cite: 31]
+    setInterval(checkIdleAndAITrigger, 5000);
 };
 
 // ⭐ 打字狀態同步
@@ -126,24 +125,51 @@ async function updateTypingStatus(isTyping) {
         if (isTyping) {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayUnion(currentUserName) });
             clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => updateTypingStatus(false), 3000);
+            // 異常斷線寬限期設為 120 秒 
+            typingTimeout = setTimeout(() => updateTypingStatus(false), 120000);
         } else {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayRemoving(currentUserName) });
         }
     } catch (e) { console.warn("打字同步略過"); }
 }
 
-// ⭐ 冷場偵測
-function checkIdleAndTriggerPledge() {
-    if (!currentRoomId || !pledgeModal.classList.contains('hidden')) return;
-    if (currentRoomUserCount < 2 || typingUsersList.length > 0) {
-        lastRoomActivityTime = Date.now();
-        return;
+// ⭐ 三階段介入邏輯 (60s/120s)
+async function checkIdleAndAITrigger() {
+    if (!currentRoomId) return;
+    
+    const now = Date.now();
+    const idleTime = now - lastRoomActivityTime;
+    const isSomeoneTyping = typingUsersList.length > 0;
+
+    // --- 60 秒門檻 [cite: 32] ---
+    if (idleTime > 60000 && !hasSent60sWarning) {
+        if (isSomeoneTyping) {
+            // 60秒提醒：有人在打字
+            const typist = typingUsersList[0];
+            await sendToDatabase(`❤️ ${typist} 正在深思熟慮地組織語言，請大家耐心等候喔...`, 'AI', 'Re:Family 智能助手', currentRoomId);
+        } else {
+            // 60秒提醒：全員冷場 (自動調解，不跳視窗)
+            triggerAIPrompt("idle_warmup", "", "所有人");
+        }
+        hasSent60sWarning = true;
     }
 
-    const idleTime = Date.now() - lastRoomActivityTime;
-    if (idleTime > 60000) { 
-        showPledgeModal();
+    // --- 120 秒門檻：強制介入 ---
+    if (idleTime > 120000) {
+        const targetUser = isSomeoneTyping ? typingUsersList[0] : (roomActiveUsersList[0] || "家人");
+        
+        // AI 強制代為發言
+        triggerAIPrompt("force_mediation", "", targetUser);
+        
+        // 重置狀態與強制移除打字標籤
+        updateTypingStatus(false);
+        lastRoomActivityTime = Date.now();
+        hasSent60sWarning = false;
+    }
+
+    // 若有新活動，重置警告旗標
+    if (idleTime < 5000) {
+        hasSent60sWarning = false;
     }
 }
 
@@ -207,7 +233,6 @@ function updateUIForChat() {
     sendButton.disabled = false;
     leaveRoomButton.classList.remove('hidden');
     
-    // ⭐ 顯示總結按鈕
     const sumBtn = document.getElementById('generateSummaryBtn');
     if(sumBtn) sumBtn.classList.remove('hidden');
 
@@ -255,7 +280,6 @@ function startChatListener(roomId) {
     if (!db) return;
     chatArea.innerHTML = '';
     displayedMessageIds = new Set();
-    conversationHistory = [];
     conversationCount = 0;
     pledgeCount = 0;
 
@@ -263,7 +287,6 @@ function startChatListener(roomId) {
         .onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
-                // ⭐ 同步最新在線名單，給總結功能使用
                 roomActiveUsersList = data.active_users || [];
                 currentRoomUserCount = roomActiveUsersList.length;
                 
@@ -299,7 +322,6 @@ function startChatListener(roomId) {
 
                         displayMessage(msg.text, type, msg.senderName, msg.timestamp);
                         if (msg.senderId !== 'AI') {
-                            conversationHistory.push({ role: 'user', name: msg.senderName, text: msg.text });
                             conversationCount++;
                             if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
                         }
@@ -310,77 +332,59 @@ function startChatListener(roomId) {
 }
 
 // =================================================================
-// ⭐ 新增：個人化總結報告 (壓軸亮點)
+// ⭐ 個人化總結報告 (從 Firebase 抓取資料庫) [cite: 18, 19]
 // =================================================================
 async function generateSummaryReport() {
-    // 防呆：如果都還沒聊天，不給總結
-    if (conversationHistory.length < 2) {
-        alert("目前的對話還太少，請多聊幾句再讓我幫你們總結喔！");
-        return;
-    }
-
-    // 1. 顯示溫馨的 Loading 彈窗
+    if (!currentRoomId) return;
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
 
-    // 2. 只抓取最新 40 筆紀錄，避免超過 API 負載
-    const historyText = conversationHistory.slice(-40).map(m => `${m.name}:${m.text}`).join('\n');
-    const usersStr = roomActiveUsersList.join('、');
-
-    // 3. 嚴格的 JSON Prompt 結構設計
-    const prompt = `
-    你現在是經驗豐富的家庭諮商師。請閱讀以下對話紀錄，並為房間內的每位成員 (${usersStr}) 產生一份專屬的溝通總結。
-    對話紀錄：
-    ${historyText}
-
-    要求：
-    1. 針對名單上的每個人，分別寫出他們在對話中的「內心渴望 (thoughts)」與「溫暖建議 (advice)」。
-    2. 防呆機制：若某人在對話中發言極少或未發言，請不要捏造，改以溫暖口吻鼓勵（例如：「這次多為聆聽，建議下次多分享感受...」）。
-    3. 必須嚴格輸出為 JSON 格式，不要包含任何 markdown 標記 (如 \`\`\`json)，直接輸出純 JSON 字串。
-    
-    格式必須完全符合以下結構：
-    {
-      "overall": "用 50 字總結這次家庭對話的整體氛圍與核心問題。",
-      "cards": [
-        { "name": "名單上的人名", "role": "他在對話中的角色(如:主要表達者/聆聽者)", "thoughts": "他的心聲解讀...", "advice": "給他的溫暖建議..." }
-      ]
-    }`;
-
     try {
+        // 直接從 Firestore 抓取最新 40 筆訊息 
+        const snapshot = await db.collection('rooms').doc(currentRoomId)
+                                .collection('messages')
+                                .orderBy('timestamp', 'desc')
+                                .limit(40)
+                                .get();
+        
+        const historyData = snapshot.docs.map(doc => doc.data()).reverse();
+        
+        if (historyData.length < 2) {
+            alert("目前的對話紀錄還不夠分析喔！");
+            return;
+        }
+
+        const historyText = historyData.map(m => `${m.senderName}:${m.text}`).join('\n');
+        const usersStr = roomActiveUsersList.join('、');
+
+        const prompt = `你現在是經驗豐富的家庭諮商師。請閱讀以下對話紀錄，並為房間內的每位成員 (${usersStr}) 產生一份專屬的溝通總結。
+        對話紀錄：\n${historyText}
+        要求：
+        1. 針對每個人分別寫出「內心渴望 (thoughts)」與「溫暖建議 (advice)」。
+        2. 發言極少的人請給予溫暖鼓勵。
+        3. 必須嚴格輸出純 JSON。
+        格式：{"overall": "50字總結", "cards": [{"name": "姓名", "role": "聆聽者/表達者", "thoughts": "心聲", "advice": "建議"}]}`;
+
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 2000 } })
         });
         
         const data = await response.json();
-        
-        // ⭐ 微創手術三：加上防撞氣囊
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
+        if (data.error) throw new Error(data.error.message);
         
         let aiText = data.candidates[0].content.parts[0].text;
-        
-        // 清理可能出現的 markdown 格式，確保能順利 Parse JSON
         aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const firstBrace = aiText.indexOf('{');
-        const lastBrace = aiText.lastIndexOf('}');
-        if(firstBrace !== -1 && lastBrace !== -1){
-            aiText = aiText.substring(firstBrace, lastBrace + 1);
-        }
+        const result = JSON.parse(aiText.substring(aiText.indexOf('{'), aiText.lastIndexOf('}') + 1));
         
-        const result = JSON.parse(aiText);
         renderSummaryCards(result);
-
     } catch (e) {
         console.error("總結失敗", e);
-        alert("分析報告時遇到一點小阻礙，請稍後再試一次！");
+        alert("分析報告時遇到阻礙，請稍後再試！");
     } finally {
-        // 隱藏 Loading 彈窗
         document.getElementById('summaryLoadingModal').classList.add('hidden');
     }
 }
 
-// 將 JSON 資料渲染成精美卡片
 function renderSummaryCards(data) {
     document.getElementById('summaryOverallText').textContent = data.overall;
     const container = document.getElementById('summaryCardsContainer');
@@ -388,7 +392,6 @@ function renderSummaryCards(data) {
 
     data.cards.forEach(card => {
         const cardDiv = document.createElement('div');
-        // 卡片設計：圓角、陰影、漸層邊框
         cardDiv.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange transition-transform hover:-translate-y-1";
         cardDiv.innerHTML = `
             <div class="flex items-center gap-3 mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
@@ -411,63 +414,56 @@ function renderSummaryCards(data) {
         `;
         container.appendChild(cardDiv);
     });
-
-    // 顯示結果視窗
     document.getElementById('summaryResultModal').classList.remove('hidden');
 }
 
-
-// 🧠 AI 偵測機制 (完整保留)
+// 🧠 AI 偵測與介入
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
 
-    const generalTriggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "態度", "閉嘴", "垃圾", "理由", "藉口", "囉嗦", "不懂", "隨便"];
-    const pressureTriggers = ["現實", "房租", "保險", "錢", "未來", "以後", "為你好", "擔心", "失望", "比較", "別人", "努力", "辛苦", "長大", "賺錢", "花錢", "生活費"];
-    const deepNeedsTriggers = ["當成大人", "尊重的", "會思考的人", "不管我", "自己決定", "平等", "長大", "信任"];
-    const deadlockTriggers = ["內耗", "沒辦法溝通", "不被理解", "累了", "放棄", "無法溝通", "心很累", "不想講了", "算了"];
+    const triggers = ["煩", "生氣", "吵架", "兇", "錢", "未來", "以後", "算了", "累了", "態度", "隨便"]; [cite: 47]
+    const isTrigger = triggers.some(k => lastText.includes(k));
 
-    const isGeneral = generalTriggers.some(k => lastText.includes(k));
-    const isPressure = pressureTriggers.some(k => lastText.includes(k));
-    const isDeep = deepNeedsTriggers.some(k => lastText.includes(k));
-    const isDeadlock = deadlockTriggers.some(k => lastText.includes(k));
-
-    if (isGeneral || isPressure || isDeep || isDeadlock || conversationCount % 3 === 0) {
+    if (isTrigger || conversationCount % 3 === 0) { [cite: 16]
         lastAIMessageTime = now;
-        let mode = (isDeep || isDeadlock) ? "summary" : "translate"; 
-        await triggerAIPrompt(mode, lastText, senderName);
+        await triggerAIPrompt("translate", lastText, senderName);
     }
 }
 
 async function triggerAIPrompt(mode, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
-    const historyText = conversationHistory.slice(-8).map(m => `${m.name}:${m.text}`).join('\n');
-    let prompt = mode === "summary" ? 
-        `你現在是「Re:Family」的資深家庭調解員。對話紀錄：${historyText}。任務：請總結雙方目前的心聲，轉化成 100 到 250 字之間的溫暖解析。⛔絕對禁止：術語。指令：告知輸入破冰字句並加標籤 [TRIGGER_PLEDGE]` : 
-        `你現在是「Re:Family」的家庭溝通翻譯官。上下文：${historyText}。最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成「背後的善意或需求」，限100字內，語氣溫柔。`;
+    
+    // 總結最近 8 筆作為上下文
+    const snapshot = await db.collection('rooms').doc(currentRoomId).collection('messages').orderBy('timestamp', 'desc').limit(8).get();
+    const historyText = snapshot.docs.map(doc => `${doc.data().senderName}:${doc.data().text}`).reverse().join('\n');
+
+    let prompt = "";
+    if (mode === "force_mediation") {
+        prompt = `你現在是 Re:Family 調解員。成員 ${senderName} 已沉默許久。請根據上下文：\n${historyText}\n，站在他的角度說一段溫暖的話表達他的在乎或難處，限 150 字，語氣自然。`;
+    } else if (mode === "idle_warmup") {
+        prompt = `現在全家陷入僵局無人說話。請根據最近對話：\n${historyText}\n，主動說一段暖場的話引導大家繼續溝通。`;
+    } else {
+        prompt = `你現在是家庭翻譯官。上下文：${historyText}\n最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成背後的溫柔需求，限 100 字。`; [cite: 16]
+    }
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
         });
         const data = await response.json();
-        
-        // ⭐ 微創手術二：加上防撞氣囊
-        if (data.error) {
-            console.error("API 錯誤:", data.error.message);
-            return;
+        if (data.candidates) {
+            const aiText = data.candidates[0].content.parts[0].text;
+            await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId); [cite: 13]
         }
-        
-        const aiText = data.candidates[0].content.parts[0].text;
-        await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
     } catch (e) { console.error(e); } finally { if (loadingIndicator) loadingIndicator.classList.add('hidden'); }
 }
 
 async function triggerSuccessAI() {
-    const successMsg = "謝謝你們體諒彼此，一起約的時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
+    const successMsg = "謝謝你們體諒彼此，一起約個時間出來聊聊天吧~ [AI_SUCCESS_REPLY]";
     await sendToDatabase(successMsg, 'AI', 'Re:Family 智能助手', currentRoomId);
-    if(confettiContainer) {
+    if(confettiContainer) { [cite: 24]
         confettiContainer.classList.remove('hidden');
         for(let i=0; i<100; i++) {
             const c = document.createElement('div');
@@ -481,7 +477,7 @@ async function triggerSuccessAI() {
 }
 
 function showPledgeModal() { 
-    if (pledgeModal) {
+    if (pledgeModal) { [cite: 23]
         pledgeModal.classList.remove('hidden'); pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; 
         submitPledgeButton.disabled = false;
         submitPledgeButton.className = "w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg";
@@ -499,7 +495,6 @@ function handleSendAction() {
     if (!currentRoomId || !userText) return;
 
     if (userText.includes("破冰")) {
-        console.log("主動發送觸發：破冰");
         showPledgeModal();
         userInput.value = ""; 
         updateTypingStatus(false);
@@ -517,7 +512,7 @@ function handleSendAction() {
 
 async function sendToDatabase(text, senderId, senderName, roomId) {
     if (!db) return;
-    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+    const expireDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); [cite: 34]
     await db.collection('rooms').doc(roomId).collection('messages').add({
         text: text, senderId: senderId, senderName: senderName, timestamp: Date.now(), expireAt: expireDate
     });
