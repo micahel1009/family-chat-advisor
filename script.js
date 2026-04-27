@@ -3,7 +3,8 @@
 // =================================================================
 const KEY_PART_1 = "AIzaSyCwVW"; 
 const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
-const GEMINI_API_KEY = KEY_PART_1 + KEY_PART_2;
+// ⭐ 微創手術一：加上 .replace 過濾器
+const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
 
 // Firebase 設定
 const firebaseConfig = {
@@ -322,7 +323,7 @@ async function generateSummaryReport() {
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
 
     // 2. 只抓取最新 40 筆紀錄，避免超過 API 負載
-    const historyText = conversationHistory.slice(-40).map(m => `${m.name}: ${m.text}`).join('\n');
+    const historyText = conversationHistory.slice(-40).map(m => `${m.name}:${m.text}`).join('\n');
     const usersStr = roomActiveUsersList.join('、');
 
     // 3. 嚴格的 JSON Prompt 結構設計
@@ -351,6 +352,12 @@ async function generateSummaryReport() {
         });
         
         const data = await response.json();
+        
+        // ⭐ 微創手術三：加上防撞氣囊
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+        
         let aiText = data.candidates[0].content.parts[0].text;
         
         // 清理可能出現的 markdown 格式，確保能順利 Parse JSON
@@ -434,7 +441,7 @@ async function checkAndTriggerAI(lastText, senderName) {
 
 async function triggerAIPrompt(mode, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
-    const historyText = conversationHistory.slice(-8).map(m => `${m.name}: ${m.text}`).join('\n');
+    const historyText = conversationHistory.slice(-8).map(m => `${m.name}:${m.text}`).join('\n');
     let prompt = mode === "summary" ? 
         `你現在是「Re:Family」的資深家庭調解員。對話紀錄：${historyText}。任務：請總結雙方目前的心聲，轉化成 100 到 250 字之間的溫暖解析。⛔絕對禁止：術語。指令：告知輸入破冰字句並加標籤 [TRIGGER_PLEDGE]` : 
         `你現在是「Re:Family」的家庭溝通翻譯官。上下文：${historyText}。最後一句：${senderName}: "${lastText}"。任務：將這句話翻譯成「背後的善意或需求」，限100字內，語氣溫柔。`;
@@ -445,6 +452,13 @@ async function triggerAIPrompt(mode, lastText, senderName) {
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
         });
         const data = await response.json();
+        
+        // ⭐ 微創手術二：加上防撞氣囊
+        if (data.error) {
+            console.error("API 錯誤:", data.error.message);
+            return;
+        }
+        
         const aiText = data.candidates[0].content.parts[0].text;
         await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
     } catch (e) { console.error(e); } finally { if (loadingIndicator) loadingIndicator.classList.add('hidden'); }
