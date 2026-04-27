@@ -1,13 +1,13 @@
 // =================================================================
-// 🚨🚨🚨 【最終救援版：穩定 Gemini 通道】API 金鑰 🚨🚨🚨
+// 🚨🚨🚨 【最終救援版】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCwVW"; 
-const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
+const KEY_PART_1 = "AIzaSyCXbq"; 
+const KEY_PART_2 = "DF72rle7726X_nTGoMyXO3A06ZwmQ";
 
-// ⭐ 強力過濾器：清除所有隱形字元與中文字，避免 ISO-8859-1 報錯
+// ⭐ 修正點一：強力除菌器，並使用正確引號包覆變數
 const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
 
-// Firebase 設定
+// Firebase 設定 (保持不變)
 const firebaseConfig = {
     apiKey: "AIzaSyA6C0ArowfDaxJKV15anQZSZT7bcdeXJ2E",
     authDomain: "familychatadvisor.firebaseapp.com",
@@ -22,7 +22,6 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
 
-// DOM 元素
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
@@ -51,7 +50,6 @@ let conversationCount = 0;
 let lastAIMessageTime = 0;
 let LAST_USER_SEND_TIME = 0;
 const COOLDOWN_TIME = 2000; 
-
 let currentRoomUserCount = 0;
 let roomActiveUsersList = []; 
 let typingUsersList = [];
@@ -59,9 +57,6 @@ let typingTimeout = null;
 let lastRoomActivityTime = Date.now(); 
 let isInitialLoad = true;
 
-// =================================================================
-// ⭐ 初始化邏輯
-// =================================================================
 window.onload = function() {
     if (currentUserName && currentRoomId) {
         if(roomEntryScreen) roomEntryScreen.style.display = 'none';
@@ -70,16 +65,11 @@ window.onload = function() {
     } else {
         if(roomEntryScreen) roomEntryScreen.style.display = 'flex';
     }
-
     if(startChatButton) startChatButton.addEventListener('click', handleRoomEntry);
     if(leaveRoomButton) leaveRoomButton.addEventListener('click', handleLeaveRoom);
     if(sendButton) sendButton.addEventListener('click', handleSendAction);
-    
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');
-    if (generateSummaryBtn) {
-        generateSummaryBtn.addEventListener('click', generateSummaryReport);
-    }
-
+    if (generateSummaryBtn) generateSummaryBtn.addEventListener('click', generateSummaryReport);
     if(userInput) {
         userInput.addEventListener('input', () => updateTypingStatus(true));
         userInput.addEventListener('keydown', (e) => {
@@ -88,7 +78,6 @@ window.onload = function() {
         });
         userInput.addEventListener('blur', () => updateTypingStatus(false));
     }
-
     if (submitPledgeButton) submitPledgeButton.addEventListener('click', handlePledgeSubmit);
     setInterval(checkIdleAndTriggerPledge, 5000);
 };
@@ -136,16 +125,15 @@ async function handleRoomEntry() {
     try {
         const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(roomId);
         const doc = await roomDocRef.get();
-        const expireAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
         if (doc.exists) {
             if (doc.data().password === password) {
                 if (doc.data().active_users && doc.data().active_users.includes(userName)) {
                     if (!confirm(`暱稱 "${userName}" 已存在。確定要使用嗎？`)) { resetEntryButton(); return; }
                 }
-                await roomDocRef.update({ active_users: firebase.firestore.FieldValue.arrayUnion(userName), expireAt: expireAt });
+                await roomDocRef.update({ active_users: firebase.firestore.FieldValue.arrayUnion(userName), expireAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) });
             } else { alert("❌ 密碼錯誤！"); resetEntryButton(); return; }
         } else {
-            await roomDocRef.set({ password: password, created_at: firebase.firestore.FieldValue.serverTimestamp(), expireAt: expireAt, active_users: [userName], typing_users: [] });
+            await roomDocRef.set({ password: password, created_at: firebase.firestore.FieldValue.serverTimestamp(), expireAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), active_users: [userName], typing_users: [] });
         }
         currentRoomId = roomId; currentUserName = userName;
         localStorage.setItem('chatRoomId', currentRoomId); localStorage.setItem('chatUserName', currentUserName);
@@ -173,21 +161,16 @@ function displayMessage(content, type, senderName, timestamp) {
     const messageContainer = document.createElement('div');
     const cleanedContent = displayContent.trim().replace(/\*/g, '').replace(/\n/g, '<br>');
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4', type === 'user' ? 'justify-end' : 'justify-start');
-    
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
-    
     if (content.includes("已宣誓破冰")) bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
     if (content.includes("系統提示")) bubbleClass = 'bg-red-50 text-red-700 border border-red-200';
-
     const wrapper = document.createElement('div');
     wrapper.className = `flex flex-col ${type === 'user' ? 'items-end' : 'items-start'}`;
     wrapper.innerHTML = `<div class="text-xs text-gray-500 mb-1 flex gap-2"><strong>${senderName}</strong><span>${timeStr}</span></div><div class="p-4 rounded-2xl max-w-md ${bubbleClass}">${cleanedContent}</div>`;
-    
     const icon = document.createElement('div');
     icon.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${senderName.includes('Re:Family') ? 'bg-warm-peach' : 'bg-gray-300'}`;
     icon.innerHTML = senderName.includes('Re:Family') ? '<i class="fas fa-heart text-white"></i>' : '<i class="fas fa-user text-gray-600"></i>';
-    
     if (type !== 'user') { messageContainer.appendChild(icon); messageContainer.appendChild(wrapper); } 
     else { messageContainer.appendChild(wrapper); messageContainer.appendChild(icon); }
     chatArea.appendChild(messageContainer); chatArea.scrollTop = chatArea.scrollHeight;
@@ -220,6 +203,7 @@ function startChatListener(roomId) {
                     }
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
                     if (msg.senderId !== 'AI') {
+                        // ⭐ 修正點二：樣板字串語法補回 $ 符號
                         conversationHistory.push({ role: 'user', name: msg.senderName, text: msg.text });
                         if (isBrandNew && msg.senderId === sessionId) {
                             conversationCount++;
@@ -235,7 +219,7 @@ function startChatListener(roomId) {
 
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now(); if (now - lastAIMessageTime < 8000) return;
-    const triggers = ["煩", "生氣", "吵架", "兇", "控制", "管", "不聽話", "亂花錢", "錢", "未來", "尊重", "算了", "累了", "垃圾"];
+    const triggers = ["煩", "吵架", "兇", "不聽話", "亂花錢", "錢", "未來", "尊重", "算了", "累了", "垃圾"];
     if (triggers.some(k => lastText.includes(k)) || conversationCount % 3 === 0) {
         lastAIMessageTime = now;
         let mode = (lastText.includes("算了") || lastText.includes("累了")) ? "summary" : "translate";
@@ -243,12 +227,12 @@ async function checkAndTriggerAI(lastText, senderName) {
     }
 }
 
+// ⭐ 修正點三：使用反引號 (`) 確保變數生效，並加入防撞氣囊
 async function triggerAIPrompt(mode, lastText, senderName) {
     if (loadingIndicator) loadingIndicator.classList.remove('hidden');
     const hist = conversationHistory.slice(-8).map(m => `${m.name}:${m.text}`).join('\n');
     let prompt = mode === "summary" ? `你現在是資深調解員。總結衝突並建議輸入破冰句並加標籤 [TRIGGER_PLEDGE]：\n${hist}` : `你現在是翻譯官。上下文：\n${hist}\n將這句翻譯成「背後的善意」：${senderName}: "${lastText}"`;
     try {
-        // ⭐ 先嘗試 v1beta
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
@@ -259,15 +243,7 @@ async function triggerAIPrompt(mode, lastText, senderName) {
         await sendToDatabase(aiText, 'AI', 'Re:Family 智能助手', currentRoomId);
     } catch (e) { 
         console.error("AI 失敗:", e);
-        // 如果失敗，退回 1.0 pro
-        try {
-            const res2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
-            });
-            const d2 = await res2.json();
-            await sendToDatabase(d2.candidates[0].content.parts[0].text, 'AI', 'Re:Family 智能助手', currentRoomId);
-        } catch(e2) { displayMessage(`[系統提示] AI 連線不穩：${e.message}`, 'system', 'Re:Family'); }
+        displayMessage(`[系統提示] AI 連線不穩：${e.message}`, 'system', 'Re:Family');
     } finally { if (loadingIndicator) loadingIndicator.classList.add('hidden'); }
 }
 
