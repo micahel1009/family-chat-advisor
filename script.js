@@ -1,9 +1,9 @@
 // =================================================================
-// 🚨🚨🚨 【防封鎖設定】Gemini API 金鑰 🚨🚨🚨 [cite: 50]
+// 🚨🚨🚨 【防封鎖設定】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
 const KEY_PART_1 = "AIzaSyCwVW"; 
 const KEY_PART_2 = "en7tHL6yH1cmjYv9ZruRpnEx23Fk0";
-// ⭐ 微創手術：過濾所有肉眼看不見的亂碼或隱形空白 [cite: 44]
+// ⭐ 修正：使用等號並過濾隱形字元 [cite: 44, 50]
 const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
 
 // Firebase 設定 [cite: 38]
@@ -21,7 +21,7 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const ROOMS_METADATA_COLLECTION = 'rooms_metadata';
 
-// --- DOM 元素引用 ---
+// --- DOM 元素 ---
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
@@ -36,14 +36,13 @@ const leaveRoomButton = document.getElementById('leaveRoomButton');
 const typingIndicator = document.getElementById('typingIndicator');
 const typingUserName = document.getElementById('typingUserName');
 
-// 破冰與特效 [cite: 22, 24]
 const pledgeModal = document.getElementById('pledgeModal');
 const pledgeInput = document.getElementById('pledgeInput');
 const submitPledgeButton = document.getElementById('submitPledgeButton');
 const confettiContainer = document.getElementById('confettiContainer');
 
-// --- 狀態控制變數 ---
-let currentUserName = localStorage.getItem('chatUserName') || null;
+// --- 狀態變數 ---
+let currentUserName = localStorage.getItem('chatUserName') || null; [cite: 7]
 let currentRoomId = localStorage.getItem('chatRoomId') || null;
 const sessionId = localStorage.getItem('sessionId') || `anon_${Math.random().toString(36).substr(2, 9)}`;
 localStorage.setItem('sessionId', sessionId);
@@ -57,12 +56,11 @@ let roomActiveUsersList = [];
 let typingUsersList = [];
 let typingTimeout = null;
 
-// 全域閒置偵測 [cite: 31]
 let lastRoomActivityTime = Date.now(); 
 let hasSent60sWarning = false;
 
 // =================================================================
-// ⭐ 1. 初始化與事件監聽
+// ⭐ 初始化邏輯
 // =================================================================
 window.onload = function() {
     if (currentUserName && currentRoomId) {
@@ -91,7 +89,7 @@ window.onload = function() {
 
     if (pledgeInput) {
         pledgeInput.addEventListener('input', (e) => {
-            const target = "我希望破冰，打破我們之間的隔閡!";
+            const target = "我希望破冰，打破我們之間的隔閡!"; [cite: 23]
             const isValid = e.target.value.trim() === target;
             submitPledgeButton.disabled = !isValid;
             submitPledgeButton.className = isValid ? 
@@ -101,14 +99,10 @@ window.onload = function() {
     }
 
     if (submitPledgeButton) submitPledgeButton.addEventListener('click', handlePledgeSubmit);
-    
-    // 5秒輪詢偵測 [cite: 31]
-    setInterval(checkIdleAndAITrigger, 5000);
+    setInterval(checkIdleAndAITrigger, 5000); [cite: 31]
 };
 
-// =================================================================
-// ⭐ 2. 即時狀態管理 (打字與閒置)
-// =================================================================
+// ⭐ 打字偵測與介入 [cite: 26, 27]
 async function updateTypingStatus(isTyping) {
     if (!currentRoomId || !currentUserName) return;
     const roomDocRef = db.collection(ROOMS_METADATA_COLLECTION).doc(currentRoomId);
@@ -116,39 +110,34 @@ async function updateTypingStatus(isTyping) {
         if (isTyping) {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayUnion(currentUserName) });
             clearTimeout(typingTimeout);
-            // 寬限期設定為 120 秒 [cite: 29]
-            typingTimeout = setTimeout(() => updateTypingStatus(false), 120000);
+            typingTimeout = setTimeout(() => updateTypingStatus(false), 120000); // 120秒防卡死
         } else {
             await roomDocRef.update({ typing_users: firebase.firestore.FieldValue.arrayRemoving(currentUserName) });
         }
-    } catch (e) { console.warn("狀態同步略過"); }
+    } catch (e) { console.warn("打字同步略過"); }
 }
 
 async function checkIdleAndAITrigger() {
     if (!currentRoomId) return;
-    
     const now = Date.now();
     const idleTime = now - lastRoomActivityTime;
     const isSomeoneTyping = typingUsersList.length > 0;
 
-    // --- 60 秒門檻  ---
+    // 60秒警告 [cite: 32]
     if (idleTime > 60000 && !hasSent60sWarning) {
         if (isSomeoneTyping) {
-            // 提示：對方正在思考中
             const typist = typingUsersList[0];
-            await sendToDatabase(`❤️ ${typist} 正在深思熟慮地組織語言，請大家耐心等候喔...`, 'AI', 'Re:Family 智能助手', currentRoomId);
+            await sendToDatabase(`❤️ ${typist} 正在深思熟慮地組織語言，請耐心等候喔...`, 'AI', 'Re:Family 智能助手', currentRoomId);
         } else {
-            // 暖場模式
             triggerAIPrompt("idle_warmup", "", "所有人");
         }
         hasSent60sWarning = true;
     }
 
-    // --- 120 秒門檻：強制介入 ---
+    // 120秒強制介入
     if (idleTime > 120000) {
         const targetUser = isSomeoneTyping ? typingUsersList[0] : (roomActiveUsersList[0] || "家人");
         triggerAIPrompt("force_mediation", "", targetUser);
-        
         updateTypingStatus(false);
         lastRoomActivityTime = Date.now();
         hasSent60sWarning = false;
@@ -157,9 +146,7 @@ async function checkIdleAndAITrigger() {
     if (idleTime < 5000) hasSent60sWarning = false;
 }
 
-// =================================================================
-// ⭐ 3. 房間與通訊邏輯
-// =================================================================
+// 🏠 房間與訊息邏輯 [cite: 2, 8]
 async function handleRoomEntry() {
     const roomId = roomIdInput.value.trim().replace(/[^a-zA-Z0-9]/g, '');
     const password = roomPasswordInput.value.trim();
@@ -199,7 +186,9 @@ function updateUIForChat() {
     document.getElementById('leaveRoomButton').classList.remove('hidden');
     document.getElementById('generateSummaryBtn').classList.remove('hidden');
     statusDisplay.textContent = `Room: ${currentRoomId} | ${currentUserName}`;
-    displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡安靜陪伴。`, 'system', 'Re:Family');
+    chatArea.innerHTML = '';
+    displayMessage(`歡迎您，${currentUserName}。我是家庭協調員，我會在這裡陪伴大家。`, 'system', 'Re:Family');
+    lastRoomActivityTime = Date.now();
 }
 
 function displayMessage(content, type, senderName, timestamp) {
@@ -212,7 +201,7 @@ function displayMessage(content, type, senderName, timestamp) {
     messageContainer.classList.add('flex', 'items-start', 'space-x-3', 'mb-4', type === 'user' ? 'justify-end' : 'justify-start');
     
     let timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none';
+    let bubbleClass = type === 'user' ? 'bg-warm-orange text-white rounded-tr-none' : 'bg-orange-50 text-gray-800 rounded-tl-none'; [cite: 11, 12, 13]
     if (content.includes("已宣誓破冰")) bubbleClass = 'bg-green-100 text-green-800 border border-green-200';
 
     messageContainer.innerHTML = type === 'user' ? 
@@ -223,9 +212,7 @@ function displayMessage(content, type, senderName, timestamp) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// =================================================================
-// ⭐ 4. Firestore 監聽器
-// =================================================================
+// 🔥 Firestore 監聽 [cite: 9]
 let displayedMessageIds = new Set();
 function startChatListener(roomId) {
     if (!db) return;
@@ -248,39 +235,36 @@ function startChatListener(roomId) {
                 if (!displayedMessageIds.has(change.doc.id)) {
                     displayedMessageIds.add(change.doc.id);
                     lastRoomActivityTime = Date.now();
-                    const type = msg.senderId === 'AI' ? 'system' : (msg.senderId === sessionId ? 'user' : 'other');
+                    const isMe = msg.senderId === sessionId;
+                    const type = msg.senderId === 'AI' ? 'system' : (isMe ? 'user' : 'other');
                     if (msg.senderId === 'AI' && msg.text.includes('[TRIGGER_PLEDGE]')) setTimeout(() => showPledgeModal(), 1000);
                     displayMessage(msg.text, type, msg.senderName, msg.timestamp);
                     if (msg.senderId !== 'AI') {
                         conversationCount++;
-                        if (msg.senderId === sessionId) checkAndTriggerAI(msg.text, msg.senderName);
+                        if (isMe) checkAndTriggerAI(msg.text, msg.senderName);
                     }
                 }
             }
         });
-    }, error => { console.error("[Index Needed] 請點擊控制台連結建立索引"); });
+    }, error => {
+        console.error("Firestore 監聽失敗，請確認是否建立 Index:", error);
+    });
 }
 
-// =================================================================
-// ⭐ 5. AI 智能總結與調解邏輯
-// =================================================================
+// ⭐ 溝通總結報告 [cite: 18, 19, 21]
 async function generateSummaryReport() {
     if (!currentRoomId) return;
     document.getElementById('summaryLoadingModal').classList.remove('hidden');
     try {
-        // 從資料庫抓取最新 40 筆 
         const snap = await db.collection('rooms').doc(currentRoomId).collection('messages').orderBy('timestamp', 'desc').limit(40).get();
         const history = snap.docs.map(doc => doc.data()).reverse();
-        if (history.length < 2) { alert("對話還不夠多喔！"); return; }
+        if (history.length < 2) { alert("紀錄不足！"); return; }
 
         const historyText = history.map(m => `${m.senderName}:${m.text}`).join('\n');
         const prompt = `你現在是資深家庭諮商師。請為成員 (${roomActiveUsersList.join('、')}) 產生 JSON 總結。
-        對話紀錄：\n${historyText}
-        要求：
-        1. 寫出「內心渴望 (thoughts)」與「專屬建議 (advice)」。
-        2. 發言極少的人請給予鼓勵。
-        3. 必須嚴格輸出純 JSON。
-        格式：{"overall": "這次溝通的氣氛總結", "cards": [{"name": "姓名", "role": "聆聽者/表達者", "thoughts": "心聲解讀", "advice": "溫暖建議"}]}`;
+        要求：針對每個人寫出「內心渴望 (thoughts)」與「專屬建議 (advice)」。嚴格輸出純 JSON。
+        格式：{"overall": "氣氛總結", "cards": [{"name": "姓名", "role": "聆聽者/表達者", "thoughts": "心聲", "advice": "建議"}]}
+        對話：\n${historyText}`;
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -289,7 +273,7 @@ async function generateSummaryReport() {
         const data = await res.json();
         let aiText = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
         renderSummaryCards(JSON.parse(aiText.substring(aiText.indexOf('{'), aiText.lastIndexOf('}') + 1)));
-    } catch (e) { alert("總結失敗，請確認資料庫索引。"); } finally { document.getElementById('summaryLoadingModal').classList.add('hidden'); }
+    } catch (e) { alert("總結失敗，請檢查 API 與索引。"); } finally { document.getElementById('summaryLoadingModal').classList.add('hidden'); }
 }
 
 function renderSummaryCards(data) {
@@ -298,14 +282,14 @@ function renderSummaryCards(data) {
     container.innerHTML = '';
     data.cards.forEach(card => {
         const div = document.createElement('div');
-        div.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange mb-4 transition-transform hover:-translate-y-1";
-        div.innerHTML = `<div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center font-bold text-warm-orange">${card.name[0]}</div><div><h4 class="font-bold">${card.name}</h4><span class="text-xs text-warm-orange">${card.role}</span></div></div>
-                         <div class="space-y-2 text-sm"><div class="bg-orange-50/50 p-3 rounded-xl"><p><strong>❤️ 內心渴望：</strong>${card.thoughts}</p></div><div class="bg-blue-50/50 p-3 rounded-xl"><p><strong>💡 專屬建議：</strong>${card.advice}</p></div></div>`;
+        div.className = "bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border-l-4 border-warm-orange mb-4";
+        div.innerHTML = `<h4 class="font-bold">${card.name} (${card.role})</h4><p>渴望：${card.thoughts}</p><p>建議：${card.advice}</p>`; [cite: 20]
         container.appendChild(div);
     });
     document.getElementById('summaryResultModal').classList.remove('hidden');
 }
 
+// 🧠 AI 偵測與介入邏輯 [cite: 14, 16]
 async function checkAndTriggerAI(lastText, senderName) {
     const now = Date.now();
     if (now - lastAIMessageTime < 8000) return;
@@ -321,27 +305,33 @@ async function triggerAIPrompt(mode, lastText, senderName) {
     try {
         const snap = await db.collection('rooms').doc(currentRoomId).collection('messages').orderBy('timestamp', 'desc').limit(8).get();
         const history = snap.docs.map(doc => `${doc.data().senderName}:${doc.data().text}`).reverse().join('\n');
-        let prompt = mode === "force_mediation" ? `成員 ${senderName} 已沉默許久。請根據對話：\n${history}\n，站在他的角度說一段溫柔的話表達在乎，限150字。` : 
-                    (mode === "idle_warmup" ? `現在全家無人說話。根據最近對話：\n${history}\n，說一段暖場的話引導大家。` : 
-                    `將「${lastText}」翻譯成其背後的「溫柔需求或善意」。對話背景：\n${history}`);
+        
+        // ⭐ 修正語法錯誤所在：確保 prompt 賦值語法正確
+        let promptText = "";
+        if (mode === "force_mediation") {
+            promptText = `成員 ${senderName} 已沉默許久。根據背景：\n${history}\n，替他說一段感性的話，限 150 字。`;
+        } else if (mode === "idle_warmup") {
+            promptText = `全家無人說話。根據對話：\n${history}\n，主動說一段暖場的話。`; [cite: 17]
+        } else {
+            promptText = `將「${lastText}」翻譯成背後的溫柔需求。紀錄：\n${history}`;
+        }
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: promptText }] }] })
         });
         const data = await res.json();
         if (data.candidates) await sendToDatabase(data.candidates[0].content.parts[0].text, 'AI', 'Re:Family 智能助手', currentRoomId);
-    } catch (e) { console.error("AI 觸發失敗"); } finally { loadingIndicator.classList.add('hidden'); }
+    } catch (e) { console.error("AI 執行錯誤:", e); } finally { loadingIndicator.classList.add('hidden'); }
 }
 
-// =================================================================
-// ⭐ 6. 其他 UI 功能 (破冰、特效、發送)
-// =================================================================
+function showPledgeModal() { pledgeModal.classList.remove('hidden'); submitPledgeButton.disabled = false; }
+function handlePledgeSubmit() { sendToDatabase("我希望破冰，打破我們之間的隔閡! (已宣誓)", sessionId, currentUserName, currentRoomId); pledgeModal.classList.add('hidden'); }
 async function triggerSuccessAI() {
-    await sendToDatabase("謝謝你們體諒彼此，一起約個時間聊聊天吧~ [AI_SUCCESS_REPLY]", 'AI', 'Re:Family 智能助手', currentRoomId);
-    if(confettiContainer) {
+    await sendToDatabase("謝謝你們體諒彼此，一起約時間聊天吧~ [AI_SUCCESS_REPLY]", 'AI', 'Re:Family 智能助手', currentRoomId);
+    if(confettiContainer) { [cite: 24]
         confettiContainer.classList.remove('hidden');
-        for(let i=0; i<100; i++) {
+        for(let i=0; i<80; i++) {
             const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random()*100+'vw';
             c.style.backgroundColor = ['#FF8A65','#FFAB91','#F8BBD9'][Math.floor(Math.random()*3)];
             c.style.animationDuration = (Math.random()*3+2)+'s'; confettiContainer.appendChild(c);
@@ -349,9 +339,6 @@ async function triggerSuccessAI() {
         setTimeout(()=>confettiContainer.classList.add('hidden'), 6000);
     }
 }
-
-function showPledgeModal() { pledgeModal.classList.remove('hidden'); pledgeInput.value = "我希望破冰，打破我們之間的隔閡!"; submitPledgeButton.disabled = false; }
-function handlePledgeSubmit() { sendToDatabase("我希望破冰，打破我們之間的隔閡! (已宣誓)", sessionId, currentUserName, currentRoomId); pledgeModal.classList.add('hidden'); lastRoomActivityTime = Date.now(); }
 
 function handleSendAction() {
     const text = userInput.value.trim();
@@ -362,8 +349,7 @@ function handleSendAction() {
 }
 
 async function sendToDatabase(text, senderId, senderName, roomId) {
-    if (!db) return;
-    const expireAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000); [cite: 34]
+    const expireAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
     await db.collection('rooms').doc(roomId).collection('messages').add({ text, senderId, senderName, timestamp: Date.now(), expireAt });
 }
 
