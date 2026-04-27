@@ -1,8 +1,8 @@
 // =================================================================
 // 🚨🚨🚨 【最終救援版】Gemini API 金鑰 🚨🚨🚨
 // =================================================================
-const KEY_PART_1 = "AIzaSyCXbq"; 
-const KEY_PART_2 = "DF72rle7726X_nTGoMyXO3A06ZwmQ";
+const KEY_PART_1 = "AIzaSyA-C"; 
+const KEY_PART_2 = "ynl01Q2US1d9ODRBgFgrsAFAfvR4dE";
 
 // ⭐ 修正點一：強力除菌器，並使用正確引號包覆變數
 const GEMINI_API_KEY = (KEY_PART_1 + KEY_PART_2).replace(/[^\x21-\x7E]/g, '').trim();
