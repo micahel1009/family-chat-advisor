@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/preline@2.3.0/dist/preline.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -100,11 +100,20 @@
                         <i class="fas fa-info-circle"></i> 查看完整使用手冊
                     </button>
                 </div>                                      
+                <div class="flex flex-wrap gap-4 items-center text-sm text-gray-500 dark:text-gray-400">                    
+                    <div class="flex items-center space-x-2"><i class="fas fa-user-secret text-warm-orange"></i><span>隱私保護設計</span></div>
+                    <span class="hidden sm:inline text-gray-300">|</span>
+                    <div class="flex items-center space-x-2"><i class="fas fa-handshake text-warm-orange"></i><span>即時衝突調解</span></div>
+                    <span class="hidden sm:inline text-gray-300">|</span>
+                    <div class="flex items-center space-x-2"><i class="fas fa-home text-warm-orange"></i><span>隨時隨地的避風港</span></div>                
+                </div>            
             </div>
             <div class="relative">                
                 <div class="relative z-10">
-                    <img src="./news_refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="console.log('圖片載入失敗');">
+                    <img src="./news_refamily_home_concept.png" alt="Re:Family 溝通概念圖" class="rounded-3xl shadow-2xl" onerror="this.src='https://raw.githubusercontent.com/micahel1009/family-chat-advisor/main/news_refamily_home_concept.png'">
                 </div>                                      
+                <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-warm-orange to-gentle-pink rounded-full opacity-70 animate-pulse"></div>                
+                <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-soft-coral to-warm-peach rounded-full opacity-50 animate-pulse animation-delay-1000"></div>            
             </div>        
         </div>
     </section>
@@ -129,7 +138,7 @@
                 </div>
 
                 <div id="loadingIndicator" class="hidden absolute top-16 left-0 right-0 z-10 bg-orange-50/90 dark:bg-gray-800/90 backdrop-blur-sm text-center text-sm font-bold text-warm-orange p-2 border-b border-orange-100 shadow-sm">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>AI 正在思考中...
+                    <i class="fas fa-spinner fa-spin mr-2"></i>AI 正在閱讀對話並思考回覆...
                 </div>
 
                 <div id="chatArea" class="chat-messages-area space-y-4"></div>
@@ -167,33 +176,74 @@
                     <p class="text-gray-800 dark:text-gray-200 font-medium text-lg">開發者：鄭傳耀</p>
                     <p class="text-gray-500 dark:text-gray-400 text-sm">淡江大學 | 人工智慧學系一年級</p>
                 </div>
+                <div class="flex flex-wrap justify-center gap-2 pt-2">
+                    <span class="px-3 py-1 bg-orange-50 dark:bg-gray-800 text-warm-orange text-xs rounded-full border border-orange-100">Google Gemini AI</span>
+                    <span class="px-3 py-1 bg-orange-50 dark:bg-gray-800 text-warm-orange text-xs rounded-full border border-orange-100">Firebase Firestore</span>
+                    <span class="px-3 py-1 bg-orange-50 dark:bg-gray-800 text-warm-orange text-xs rounded-full border border-orange-100">Tailwind CSS</span>
+                </div>
+                <div class="flex flex-col items-center gap-4 pt-6">
+                    <button onclick="document.getElementById('conceptModal').classList.remove('hidden')" class="text-warm-orange hover:text-warm-peach text-sm font-bold flex items-center gap-2 transition-colors underline decoration-2 underline-offset-4">
+                        <i class="fas fa-book-open"></i> 查看開發日誌與設計初衷
+                    </button>
+                    <div class="flex items-center pt-2">
+                        <span class="text-xs text-gray-400">© 2026 Re:Family. All Rights Reserved.</span>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
 
     <div id="manualModal" class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-5xl w-full p-6 relative animate-pop-in overflow-y-auto max-h-[95vh]">
-            <button onclick="document.getElementById('manualModal').classList.add('hidden')" class="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500"><i class="fas fa-times"></i></button>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6"> 
-                <img src="./S__59875335_0.jpg" class="w-full h-auto rounded-2xl shadow-lg">
-                <img src="./S__59875336_0.jpg" class="w-full h-auto rounded-2xl shadow-lg">
-                <img src="./S__59875337_0.jpg" class="w-full h-auto rounded-2xl shadow-lg">
-                <img src="./S__59875338_0.jpg" class="w-full h-auto rounded-2xl shadow-lg">
+            <button onclick="document.getElementById('manualModal').classList.add('hidden')" class="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500 hover:text-warm-orange transition-colors"><i class="fas fa-times text-xl"></i></button>
+            <div class="space-y-6">
+                <h3 class="text-2xl font-bold text-warm-orange text-center mb-4">Re:Family 使用者說明手冊</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+                    <img src="./S__59875335_0.jpg" class="w-full h-auto rounded-2xl shadow-lg border border-orange-50 object-contain">
+                    <img src="./S__59875336_0.jpg" class="w-full h-auto rounded-2xl shadow-lg border border-orange-50 object-contain">
+                    <img src="./S__59875337_0.jpg" class="w-full h-auto rounded-2xl shadow-lg border border-orange-50 object-contain">
+                    <img src="./S__59875338_0.jpg" class="w-full h-auto rounded-2xl shadow-lg border border-orange-50 object-contain">
+                </div>
             </div>
         </div>
     </div>
 
     <div id="pledgeModal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-pop-in border-4 border-warm-peach/30">
-            <h3 class="text-2xl font-bold mb-4">打破隔閡的關鍵時刻</h3>
-            <div class="bg-orange-50 p-4 rounded-xl mb-4 text-warm-orange font-bold">我希望破冰，打破我們之間的隔閡!</div>
-            <input type="text" id="pledgeInput" class="w-full p-3 border-2 rounded-xl text-center mb-4 focus:border-warm-orange outline-none bg-white dark:bg-gray-700">
-            <button id="submitPledgeButton" class="w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg">確認送出</button>
+            <div class="w-24 h-24 bg-gradient-to-b from-warm-peach to-pink-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md"><i class="fas fa-handshake text-5xl text-white"></i></div>
+            <h3 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white">打破隔閡的關鍵時刻</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-6 text-sm text-center">請在下方輸入約定語句：</p>
+            <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl mb-4 text-warm-orange font-bold text-base border border-orange-100">我希望破冰，打破我們之間的隔閡!</div>
+            <input type="text" id="pledgeInput" value="我希望破冰，打破我們之間的隔閡!" class="w-full p-3 border-2 rounded-xl text-center mb-4 focus:border-warm-orange outline-none bg-white dark:bg-gray-700 dark:text-white">
+            <div class="space-y-3">
+                <button id="submitPledgeButton" class="w-full py-3.5 bg-warm-orange text-white font-bold rounded-xl shadow-lg">確認送出</button>
+                <button onclick="document.getElementById('pledgeModal').classList.add('hidden')" class="w-full py-2 text-gray-400 text-sm">暫時跳過</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="conceptModal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full p-8 relative animate-pop-in">
+            <button onclick="document.getElementById('conceptModal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-2xl font-bold text-warm-orange mb-6 flex items-center gap-3"><i class="fas fa-lightbulb"></i> 設計初衷與核心理念</h3>
+            <div class="space-y-4 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed overflow-y-auto max-h-[60vh] pr-2">
+                <p class="font-bold text-lg">「別讓氣話，遮住了愛的本意。」</p>
+                <p>作為大學生，我們觀察到現代家庭情緒化的「氣話」往往成為溝通的阻礙。Re:Family 透過 AI 智能調解，在衝突發生時提供溫暖的翻譯與緩衝。</p>
+                <div class="bg-orange-50 dark:bg-gray-700 p-4 rounded-xl border-l-4 border-warm-orange">
+                    <p class="font-bold mb-1">技術核心 (Technical Highlights):</p>
+                    <ul class="list-disc list-inside space-y-1 text-sm">
+                        <li>雙模式 AI 邏輯：整合 Google Gemini API 自動切換調解模式。</li>
+                        <li>即時狀態同步：使用 Firebase Firestore 實作多人在線群聊與狀態監聽。</li>
+                        <li>UX 心理學應用：設計「破冰宣誓」與「打字避讓」機制。</li>
+                    </ul>
+                </div>
+                <p>這個專案代表了對 AI 賦能社會的思考，希望能用技術為家庭帶來一絲溫度的改變。</p>
+            </div>
         </div>
     </div>
 
     <div id="summaryLoadingModal" class="fixed inset-0 z-[80] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 transition-all">
-        <div class="w-24 h-24 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center animate-heartbeat mb-8 shadow-xl">
+        <div class="w-24 h-24 bg-gradient-to-br from-warm-orange to-warm-peach rounded-full flex items-center justify-center animate-heartbeat mb-8 shadow-xl shadow-orange-200/50 dark:shadow-none">
             <i class="fas fa-magic text-4xl text-white"></i>
         </div>
         <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-3 text-center">AI 正在細心閱讀你們的對話</h3>
@@ -203,7 +253,7 @@
     <div id="summaryResultModal" class="fixed inset-0 z-[75] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-2 md:p-4">
         <div class="bg-gradient-to-br from-orange-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col relative animate-pop-in border-4 border-white/50 dark:border-gray-700">
             <div class="p-6 md:p-8 flex-shrink-0 border-b border-orange-200/50 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 rounded-t-3xl text-center">
-                <h2 class="text-2xl font-bold bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">專屬溝通總結報告</h2>
+                <h2 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-warm-orange to-gentle-pink bg-clip-text text-transparent">專屬溝通總結報告</h2>
                 <p id="summaryOverallText" class="mt-4 text-sm font-medium leading-relaxed"></p>
             </div>
             <div id="summaryCardsContainer" class="p-4 md:p-8 overflow-y-auto flex-grow space-y-4"></div>
@@ -215,6 +265,6 @@
 
     <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden hidden"></div>
 
-    <script src="script.js?v=GOD_PLEASE_WORK_999"></script>
+    <script src="script.js?v=CRITICAL_FINAL_FIX_V200"></script>
 </body>
 </html>
